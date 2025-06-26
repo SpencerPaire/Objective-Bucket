@@ -14,7 +14,6 @@ Features to add:
 - RGB LED strip for high visibility feedback.
 
 Gamemodes to add:
-- TDM (buttons count deaths per team)
 - KotH Timer - Each button has a timer. When button X is pressed, all other timers pause and timer X resumes. reset = all timers to 0:00.
 - Life counters - When button X is pressed, counter X increments (For now, we can just tell players, "if your count equals 3, you die", for example.)
 - Fifth Element - When all buttons are held, a 10 second timer is started. If any button is released, the timer resets. If the timer completes, the screen flashes on and off.
