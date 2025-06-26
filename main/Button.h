@@ -15,6 +15,7 @@ struct ButtonData {
   union
   {
     Ticks_t holdTime;
+    Ticks_t releasedTime;
   };
 };
 
@@ -34,7 +35,7 @@ private:
 public:
   Button(int pin, ButtonCallback callback, void* context, Timers *timers, Ticks_t holdTime = 1000, bool inverted = true);
   void Poll(void);
-  ButtonState State(void);
+  ButtonData State(void);
 };
 
 #endif

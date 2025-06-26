@@ -115,3 +115,8 @@ void Timers::Resume(Timer_t *timer)
 {
   timer->running = true;
 }
+
+Ticks_t Timers::ElapsedTime(Timer_t *timer)
+{
+  return timer->initialTicks - timer->remainingTicks;
+}

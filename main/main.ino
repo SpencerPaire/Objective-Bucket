@@ -24,7 +24,7 @@ void ButtonEvent(void *context, ButtonData data)
     Timer_t *blink = (Timer_t *)context;
     if(data.event == ButtonState::Press)
     {
-        Serial.println("Button pressed");
+        Serial.printf("Button pressed after %d ms\n", data.releasedTime);
         timers.Pause(blink);
     }
     else if(data.event == ButtonState::Release)
@@ -34,7 +34,7 @@ void ButtonEvent(void *context, ButtonData data)
     }
     else if(data.event == ButtonState::Hold)
     {
-        Serial.println("Button held for 1s");
+        Serial.printf("Button held for %d ms\n", data.holdTime);
     }
 }
 

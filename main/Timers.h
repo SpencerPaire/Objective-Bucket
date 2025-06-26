@@ -44,6 +44,7 @@ public:
   void Stop(Timer_t *timer);
   void Pause(Timer_t *timer);
   void Resume(Timer_t *timer);
+  Ticks_t ElapsedTime(Timer_t *timer);
 };
 
 #endif
