@@ -2,6 +2,7 @@
 #include "Arduino.h"
 #include <functional>
 
+#define PollPeriod 10
 
 static void TriggerPoll(void* context)
 {
@@ -18,19 +19,35 @@ void Button::Poll(void)
   {
     if(currentState)
     {
+      this->state = ButtonState::Press;
+      this->heldPeriods = 0;
       const ButtonData data = {
-        .event = ButtonEvent::Press,
+        .event = ButtonState::Press,
       };
       this->callback(this->context, data);
     }
     else
     {
+      this->state = ButtonState::Release;
       const ButtonData data = {
-        .event = ButtonEvent::Release,
+        .event = this->state,
+        .holdTime = this->heldPeriods * PollPeriod,
       };
       this->callback(this->context, data);
     }
   } 
+  else if(currentState)
+  {
+    this->heldPeriods++;
+    if( (this->state != ButtonState::Hold) && ((this->heldPeriods*PollPeriod) > holdTime) )
+    {
+      this->state = ButtonState::Hold;
+      const ButtonData data = {
+        .event = this->state,
+      };
+      this->callback(this->context, data);
+    }
+  }
   this->prevState = currentState;
 }
 
@@ -38,7 +55,7 @@ Button::Button(int pin, ButtonCallback callback, void* context, Timers *timers, 
 {
   this->pin = pin;
   this->debounceTime = debounceTime;
-  this->holdTime = 0;
+  this->holdTime = 1000;
   this->prevState = false;
   this->callback = callback;
   this->context = context;
@@ -48,6 +65,11 @@ Button::Button(int pin, ButtonCallback callback, void* context, Timers *timers, 
 
   Serial.println("Button");
   //auto callback = [this](){this->Poll();};
-  //timers->Start(1000, callback, TimerType::Periodic);
-  timers->Start(10, TriggerPoll, this, TimerType::Periodic);
+  //timers->Start(PollPeriod, callback, TimerType::Periodic);
+  timers->Start(PollPeriod, TriggerPoll, this, TimerType::Periodic);
+}
+
+ButtonState Button::State(void)
+{
+  return this->state;
 }

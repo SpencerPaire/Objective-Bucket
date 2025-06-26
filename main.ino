@@ -22,15 +22,19 @@ void ToggleLED(void *context)
 void ButtonEvent(void *context, ButtonData data)
 {
     Timer_t *blink = (Timer_t *)context;
-    if(data.event == ButtonEvent::Press)
+    if(data.event == ButtonState::Press)
     {
         Serial.println("Button pressed");
         timers.Pause(blink);
     }
-    else if(data.event == ButtonEvent::Release)
+    else if(data.event == ButtonState::Release)
     {
-        Serial.println("Button released");
+        Serial.printf("Button released after %d ms\n", data.holdTime);
         timers.Resume(blink);
+    }
+    else if(data.event == ButtonState::Hold)
+    {
+        Serial.println("Button held for 1s");
     }
 }
 
