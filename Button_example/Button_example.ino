@@ -1,5 +1,5 @@
-#include "\Libraries\Timers\Timers.h"
-#include "\Libraries\Button\Button.h"
+#include "Timers.h"
+#include "Button.h"
 
 static Timers timers;
 Timer_t *blink;
