@@ -51,7 +51,7 @@ void setup()
     //static Button buttonReset = Button(BUTTON1_PIN, ButtonEvent, blink, &timers);
     //static Button buttonReset = Button(BUTTON2_PIN, ButtonEvent, blink, &timers);
     //static Button buttonReset = Button(BUTTON3_PIN, ButtonEvent, blink, &timers);
-    static Button buttonReset = Button(BUTTON4_PIN, ButtonEvent, blink, &timers);
+    static Button buttonReset = Button(BUTTON4_PIN, &timers, ButtonEvent, blink);
 
     // Test code, non-functional
     // auto lambda = [](void) {ToggleLED();};

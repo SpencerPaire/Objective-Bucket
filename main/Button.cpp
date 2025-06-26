@@ -20,28 +20,28 @@ void Button::Poll(void)
     if(currentState)
     {
       this->state = ButtonState::Press;
-      const ButtonData data = {
-        .event = ButtonState::Press,
-        .releasedTime = this->heldPeriods * PollPeriod,
-      };
-      this->heldPeriods = 0;
       if(this->callback)
       {
+        const ButtonData data = {
+          .event = ButtonState::Press,
+          .releasedTime = this->heldPeriods * PollPeriod,
+        };
         this->callback(this->context, data);
       }
+      this->heldPeriods = 0;
     }
     else
     {
       this->state = ButtonState::Release;
-      const ButtonData data = {
-        .event = this->state,
-        .holdTime = this->heldPeriods * PollPeriod,
-      };
-      this->heldPeriods = 0;
       if(this->callback)
       {
+        const ButtonData data = {
+          .event = this->state,
+          .holdTime = this->heldPeriods * PollPeriod,
+        };
         this->callback(this->context, data);
       }
+      this->heldPeriods = 0;
     }
   } 
   else if(currentState)
@@ -49,18 +49,21 @@ void Button::Poll(void)
     if( (this->state != ButtonState::Hold) && ((this->heldPeriods*PollPeriod) >= holdTime) )
     {
       this->state = ButtonState::Hold;
-      const ButtonData data = {
-        .event = this->state,
-        .holdTime = this->heldPeriods * PollPeriod,
-      };
-      this->callback(this->context, data);
+      if(this->callback)
+      {
+        const ButtonData data = {
+          .event = this->state,
+          .holdTime = this->heldPeriods * PollPeriod,
+        };
+        this->callback(this->context, data);
+      }
     }
   }
   this->heldPeriods++;
   this->prevState = currentState;
 }
 
-Button::Button(int pin, ButtonCallback callback, void* context, Timers *timers, Ticks_t holdTime, bool inverted)
+Button::Button(int pin, Timers *timers, ButtonCallback callback, void* context, Ticks_t holdTime, bool inverted)
 {
   this->pin = pin;
   this->holdTime = holdTime;

@@ -33,7 +33,7 @@ private:
   ButtonState state;
 
 public:
-  Button(int pin, ButtonCallback callback, void* context, Timers *timers, Ticks_t holdTime = 1000, bool inverted = true);
+  Button(int pin, Timers *timers, ButtonCallback callback = NULL, void* context = NULL, Ticks_t holdTime = 1000, bool inverted = true);
   void Poll(void);
   ButtonData State(void);
 };
