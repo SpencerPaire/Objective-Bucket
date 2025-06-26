@@ -25,7 +25,6 @@ private:
   int pin;
   int heldPeriods;
   Ticks_t holdTime;
-  Ticks_t debounceTime;
   ButtonCallback callback;
   void *context;
   bool prevState;
@@ -33,7 +32,7 @@ private:
   ButtonState state;
 
 public:
-  Button(int pin, ButtonCallback callback, void* context, Timers *timers, Ticks_t debounceTime = 50, bool inverted = true);
+  Button(int pin, ButtonCallback callback, void* context, Timers *timers, Ticks_t holdTime = 1000, bool inverted = true);
   void Poll(void);
   ButtonState State(void);
 };

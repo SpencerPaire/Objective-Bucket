@@ -51,11 +51,10 @@ void Button::Poll(void)
   this->prevState = currentState;
 }
 
-Button::Button(int pin, ButtonCallback callback, void* context, Timers *timers, Ticks_t debounceTime, bool inverted)
+Button::Button(int pin, ButtonCallback callback, void* context, Timers *timers, Ticks_t holdTime, bool inverted)
 {
   this->pin = pin;
-  this->debounceTime = debounceTime;
-  this->holdTime = 1000;
+  this->holdTime = holdTime;
   this->prevState = false;
   this->callback = callback;
   this->context = context;
