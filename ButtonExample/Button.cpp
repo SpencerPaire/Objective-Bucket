@@ -80,6 +80,12 @@ Button::Button(int pin, Timers *timers, ButtonCallback callback, void* context, 
   timers->Start(PollPeriod, TriggerPoll, this, TimerType::Periodic);
 }
 
+void Button::Subscribe(ButtonCallback callback, void* context)
+{
+  this->callback = callback;
+  this->context = context;
+}
+
 ButtonData Button::State(void)
 {
   const ButtonData data = {
@@ -87,4 +93,9 @@ ButtonData Button::State(void)
     .holdTime = this->heldPeriods * PollPeriod,
   };
   return data;
+}
+
+void Button::SetHoldTime(Ticks_t holdTime)
+{
+  this->holdTime = holdTime;
 }

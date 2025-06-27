@@ -1,49 +1,82 @@
+#include <Wire.h>
+#include <hd44780.h>
+#include <hd44780ioClass/hd44780_I2Cexp.h>
 #include "Timers.h"
 #include "Button.h"
+#include "Lcd.h"
+#include "GameModeRunner.h"
+#include "KotH.h"
+
+#define LINE_LENGTH 20
+#define NUM_ROWS 4
+#define MAX_BUFFER_LENGTH (LINE_LENGTH + 1)
 
 static Timers timers;
-Timer_t *blink;
+static Timer_t *blink;
+static Lcd lcd(4, 20);
 
-#define BUTTON0_PIN D5
-#define BUTTON1_PIN D6
-#define BUTTON2_PIN D7
-#define BUTTON3_PIN D3
-#define BUTTON4_PIN D4
+#define BUTTON0_PIN D3
+#define BUTTON1_PIN D4
+#define BUTTON2_PIN D5
+#define BUTTON3_PIN D6
+#define BUTTON4_PIN D7
 static int ledBlink = LED_BUILTIN ;
 
+uint8_t getMode(uint8 pin)
+{
+    uint8_t bit = digitalPinToBitMask(LED_BUILTIN);
+    uint8_t port = digitalPinToPort(LED_BUILTIN);
+
+    volatile uint32_t *reg, *out;
+    reg = portModeRegister(port);
+    out = portOutputRegister(port);
+
+    uint8_t mode = 0xFF;
+    if (*reg & bit)
+        mode = OUTPUT;
+    else if (*out & bit)
+        mode = INPUT_PULLUP;
+    else
+        mode = INPUT;
+    
+    return mode;
+}
 
 void ToggleLED(void *context)
 {
+    // DOES NOT WORK, shared pin with button1
     int led = *(int*)context;
+    uint8_t mode = getMode(led);
+    pinMode(led , OUTPUT);
     digitalWrite(led, !digitalRead(led));
+    pinMode(led, mode);
     //Serial.println("Heartbeat");
 }
 
+void UpdateLcd(void *context)
+{
+    lcd.Update();
+}
 
 void ButtonEvent(void *context, ButtonData data)
 {
-    int index = *(int*)context;
+    Timer_t *blink = (Timer_t *)context;
     if(data.event == ButtonState::Press)
     {
-        Serial.print("Button ");
-        Serial.print(index);
-        Serial.printf(" pressed after %d ms\n", data.releasedTime);
+        Serial.printf("Button pressed after %d ms\n", data.releasedTime);
         timers.Pause(blink);
     }
     else if(data.event == ButtonState::Release)
     {
-        Serial.print("Button ");
-        Serial.print(index);
-        Serial.printf(" released after %d ms\n", data.holdTime);
+        Serial.printf("Button released after %d ms\n", data.holdTime);
         timers.Resume(blink);
     }
     else if(data.event == ButtonState::Hold)
     {
-        Serial.print("Button ");
-        Serial.print(index);
-        Serial.printf(" held for %d ms\n", data.holdTime);
+        Serial.printf("Button held for %d ms\n", data.holdTime);
     }
 }
+
 void setup()
 {
     Serial.begin(9600);
@@ -51,22 +84,37 @@ void setup()
     digitalWrite(LED_BUILTIN , true);
     Serial.println("Power On");
 
-    blink = timers.Start(500, ToggleLED, &ledBlink, TimerType::Periodic);
-    static int iR = 0;
-    static int i1 = 1;
-    static int i2 = 2;
-    static int i3 = 3;
-    static int i4 = 4;
-    static Button buttonR = Button(BUTTON0_PIN, &timers, ButtonEvent, &iR);
-    static Button button1 = Button(BUTTON1_PIN, &timers, ButtonEvent, &i1);
-    static Button button2 = Button(BUTTON2_PIN, &timers, ButtonEvent, &i2);
-    static Button button3 = Button(BUTTON3_PIN, &timers, ButtonEvent, &i3);
-    static Button button4 = Button(BUTTON4_PIN, &timers, ButtonEvent, &i4);
+    String msg = "Hello, World!";
+    lcd.WriteMessage(msg, 0, 0);
 
-    // Test code, non-functional
-    // auto lambda = [](void) {ToggleLED();};
-    // timers.Start(500, lambda, TimerType::Periodic );
+    blink = timers.Start(500, ToggleLED, &ledBlink, TimerType::Periodic);
+    timers.Start(200, UpdateLcd, NULL, TimerType::Periodic);
+
+    static Button button0 = Button(BUTTON0_PIN, &timers);
+    static Button button1 = Button(BUTTON1_PIN, &timers);
+    static Button button2 = Button(BUTTON2_PIN, &timers);
+    static Button button3 = Button(BUTTON3_PIN, &timers);
+    static Button buttonReset = Button(BUTTON4_PIN, &timers);
+
+    static Button *buttons[] =
+    {
+        &button0,
+        &button1,
+        &button2,
+        &button3,
+        &buttonReset,
+    };
+
+    delay(5000);
+
+    lcd.Init();
+
+    static GameModeRunner gameModeRunner = GameModeRunner(&timers, buttons, &lcd);
+
+    static KotH koth = KotH();
+    gameModeRunner.AddGameMode(&koth);
 }
+
 void loop()
 {
     timers.Run();
