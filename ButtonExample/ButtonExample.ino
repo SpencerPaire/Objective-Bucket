@@ -65,7 +65,7 @@ void setup()
     lcd.WriteMessage(msg, 0, 0);
 
     //blink = timers.Start(500, ToggleLED, &ledBlink, TimerType::Periodic);
-    timers.Start(200, UpdateLcd, NULL, TimerType::Periodic);
+    timers.Start(100, UpdateLcd, NULL, TimerType::Periodic);
 
     static Button button0 = Button(BUTTON0_PIN, &timers);
     static Button button1 = Button(BUTTON1_PIN, &timers);
