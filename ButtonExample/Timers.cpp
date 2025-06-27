@@ -102,6 +102,7 @@ Timer_t *Timers::Start(Ticks_t ticks, std::function<void(void)> lambda, TimerTyp
 
 void Timers::Stop(Timer_t *timer)
 {
+  timer->running = false;
   timer->remainingTicks = 0;
   timer->reload = false;
 }
@@ -119,4 +120,9 @@ void Timers::Resume(Timer_t *timer)
 Ticks_t Timers::ElapsedTime(Timer_t *timer)
 {
   return timer->initialTicks - timer->remainingTicks;
+}
+
+Ticks_t Timers::RemainingTime(Timer_t *timer)
+{
+  return timer->remainingTicks;
 }

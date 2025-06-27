@@ -29,9 +29,12 @@ class GameMode {
 
   public:
     GameMode();
+    GameMode(String name);
     String GetName();
     virtual void Init(Timers *timers, Button *buttons[ButtonEnum_Max], Lcd *lcd);
     virtual void DeInit();
+    virtual void Pause();
+    virtual void Resume();
     virtual void Reset();
     virtual void ButtonEvent(int button, ButtonData data);
     virtual void UpdateScreen();
