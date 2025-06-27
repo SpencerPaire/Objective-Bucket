@@ -75,7 +75,15 @@ void GameModeRunner::ButtonEvent(int button, ButtonData data)
     if(data.event == ButtonState::Release)
     {
       Serial.println("Down");
-      this->mode = (this->mode - 1) % this->numGames;
+      // Unfortunately, modulo does not work right on negative numbers, so I had to handle wrapping around manually.
+      if(this->mode == 0)
+      {
+        this->mode = this->numGames - 1;
+      }
+      else
+      {
+        this->mode = (this->mode - 1) % this->numGames;
+      }
       this->GameSelect();
     }
   }
@@ -116,7 +124,7 @@ void GameModeRunner::GameSelect()
     {
       int prev = (this->mode == 0) ? this->numGames - 1 : this->mode - 1;
       msg = this->games[prev]->GetName();
-      this->lcd->WriteMessage(msg, 0, 1);
+      this->lcd->WriteMessage(msg, 0, 1, false);
     }
 
     int numberOfLines = min(this->lcd->GetRows() - 1, this->numGames);
@@ -124,11 +132,11 @@ void GameModeRunner::GameSelect()
     {
       int game = (this->mode + i) % this->numGames;
       msg = this->games[game]->GetName();
-      this->lcd->WriteMessage(msg, i+1, 1);
+      this->lcd->WriteMessage(msg, i+1, 1, false); // Allowing line erase causes weird graphical issues
     }
 
     msg = "*";
-    this->lcd->WriteMessageWithoutClear(msg, 1, 0);
+    this->lcd->WriteMessage(msg, 1, 0, false);
   }
 }
 
@@ -173,6 +181,11 @@ GameMode::GameMode()
   this->name = "Default GameMode";
 }
 
+GameMode::GameMode(String name)
+{
+  this->name = name;
+}
+
 String GameMode::GetName()
 {
   return this->name;
@@ -186,6 +199,16 @@ void GameMode::Init(Timers *timers, Button *buttons[ButtonEnum_Max], Lcd *lcd)
 void GameMode::DeInit()
 {
   
+}
+
+void GameMode::Pause()
+{
+
+}
+
+void GameMode::Resume()
+{
+
 }
 
 void GameMode::Reset()

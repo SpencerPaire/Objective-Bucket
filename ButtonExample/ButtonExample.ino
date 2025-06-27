@@ -22,34 +22,11 @@ static Lcd lcd(4, 20);
 #define BUTTON4_PIN D7
 static int ledBlink = LED_BUILTIN ;
 
-uint8_t getMode(uint8 pin)
-{
-    uint8_t bit = digitalPinToBitMask(LED_BUILTIN);
-    uint8_t port = digitalPinToPort(LED_BUILTIN);
-
-    volatile uint32_t *reg, *out;
-    reg = portModeRegister(port);
-    out = portOutputRegister(port);
-
-    uint8_t mode = 0xFF;
-    if (*reg & bit)
-        mode = OUTPUT;
-    else if (*out & bit)
-        mode = INPUT_PULLUP;
-    else
-        mode = INPUT;
-    
-    return mode;
-}
-
 void ToggleLED(void *context)
 {
     // DOES NOT WORK, shared pin with button1
     int led = *(int*)context;
-    uint8_t mode = getMode(led);
-    pinMode(led , OUTPUT);
     digitalWrite(led, !digitalRead(led));
-    pinMode(led, mode);
     //Serial.println("Heartbeat");
 }
 
@@ -80,15 +57,15 @@ void ButtonEvent(void *context, ButtonData data)
 void setup()
 {
     Serial.begin(9600);
-    pinMode(LED_BUILTIN , OUTPUT);
-    digitalWrite(LED_BUILTIN , true);
+    //pinMode(ledBlink , OUTPUT);
+    //digitalWrite(ledBlink , true);
     Serial.println("Power On");
 
     String msg = "Hello, World!";
     lcd.WriteMessage(msg, 0, 0);
 
-    blink = timers.Start(500, ToggleLED, &ledBlink, TimerType::Periodic);
-    timers.Start(200, UpdateLcd, NULL, TimerType::Periodic);
+    //blink = timers.Start(500, ToggleLED, &ledBlink, TimerType::Periodic);
+    timers.Start(100, UpdateLcd, NULL, TimerType::Periodic);
 
     static Button button0 = Button(BUTTON0_PIN, &timers);
     static Button button1 = Button(BUTTON1_PIN, &timers);
@@ -109,10 +86,17 @@ void setup()
 
     lcd.Init();
 
+    lcd.ClearScreen();
     static GameModeRunner gameModeRunner = GameModeRunner(&timers, buttons, &lcd);
 
     static KotH koth = KotH();
     gameModeRunner.AddGameMode(&koth);
+
+    static GameMode g1 = GameMode("Game 1");
+    gameModeRunner.AddGameMode(&g1);
+
+    static GameMode g2 = GameMode("Game 2");
+    gameModeRunner.AddGameMode(&g2);
 }
 
 void loop()

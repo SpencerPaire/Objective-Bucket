@@ -28,22 +28,38 @@ void Lcd::Init()
    lcd.backlight();
 }
 
-void Lcd::WriteMessage(String message, uint8_t row, uint8_t col)
+void Lcd::WriteMessage(String message, uint8_t row, uint8_t col, bool clearLine)
 {
-   if(message.length() < numberOfCols)
+   if(clearLine)
    {
-      for(int i = message.length(); i < numberOfCols; i++)
+      if(message.length() < numberOfCols)
       {
-         message.concat(' ');
+         for(int i = message.length(); i < numberOfCols; i++)
+         {
+            message.concat(' ');
+         }
       }
+      strncpy(buffer[row], blank, numberOfCols + 1);
    }
-   strncpy(buffer[row], blank, numberOfCols + 1);
    strncpy(&buffer[row][col], message.c_str(), message.length());
 }
 
-void Lcd::WriteMessageWithoutClear(String message, uint8_t row, uint8_t col)
+void Lcd::WriteMessage(String message, uint8_t row, Alignment align, bool clearLine)
 {
-   strncpy(&buffer[row][col], message.c_str(), message.length());
+   uint8_t col;
+   if(align == Alignment::Left)
+   {
+      col = 0;
+   }
+   else if(align == Alignment::Right)
+   {
+      col = numberOfCols - message.length();
+   }
+   else if(align == Alignment::Center)
+   {
+      col = (numberOfCols - message.length()) / 2;
+   }
+   this->WriteMessage(message, row, col, clearLine);
 }
 
 void Lcd::ClearScreen()
