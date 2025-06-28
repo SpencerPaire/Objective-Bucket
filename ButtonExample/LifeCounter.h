@@ -7,6 +7,7 @@
 
 enum LifeCounter_Timers {
   LifeCounter_UpdateTimer,
+  LifeCounter_FlashTimer,
   LifeCounter_MaxTimers
 };
 
@@ -24,6 +25,7 @@ class LifeCounter : public GameMode {
     void Reset();
     void ButtonEvent(int button, ButtonData data);
     void UpdateScreen();
+    bool flash = false;
 };
 
 #endif
