@@ -102,9 +102,6 @@ void setup()
 
     static GameMode g2 = GameMode(" --- ");
     gameModeRunner.AddGameMode(&g2);
-
-    static GameMode g3 = GameMode(" --- ");
-    gameModeRunner.AddGameMode(&g3);
 }
 
 void loop()
