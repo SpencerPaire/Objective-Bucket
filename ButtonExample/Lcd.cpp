@@ -34,7 +34,7 @@ void Lcd::WriteMessage(String message, uint8_t row, uint8_t col, bool clearLine)
    {
       if(message.length() < numberOfCols)
       {
-         for(int i = message.length(); i < numberOfCols; i++)
+         for(int i = message.length(); i < numberOfCols - col; i++)
          {
             message.concat(' ');
          }
@@ -59,7 +59,7 @@ void Lcd::WriteMessage(String message, uint8_t row, Alignment align, bool clearL
    {
       col = (numberOfCols - message.length()) / 2;
    }
-   this->WriteMessage(message, row, col, clearLine);
+   WriteMessage(message, row, col, clearLine);
 }
 
 void Lcd::ClearScreen()
