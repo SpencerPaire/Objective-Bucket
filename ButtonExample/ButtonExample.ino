@@ -6,11 +6,8 @@
 #include "Lcd.h"
 #include "GameModeRunner.h"
 #include "KotH.h"
-<<<<<<< HEAD
 #include "FifthElement.h"
-=======
 #include "LifeCounter.h"
->>>>>>> develop
 
 #define LINE_LENGTH 20
 #define NUM_ROWS 4
