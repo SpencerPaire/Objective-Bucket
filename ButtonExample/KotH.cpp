@@ -1,11 +1,16 @@
 #include "KotH.h"
 
-#define GAME_TIME (10 * 60 * 1000)
+#define GAME_TIME (6 * 60 * 1000)
 
 static void GameOver(void *context)
 {
   GameMode *instance = (GameMode*)context;
   instance->Pause();
+}
+
+static void ClearFlash(void *context) {
+  KotH *instance = (KotH*)context;
+  instance->flash = false;
 }
 
 static void UpdateEvent(void *context)
@@ -48,6 +53,8 @@ void KotH::ButtonEvent(int button, ButtonData data)
       }
       this->timers->Resume(this->gameTimers[button]);
       this->timers->Resume(this->gameTimers[KotH_GameTimer]);
+      this->gameTimers[KotH_FlashTimer] = this->timers->Start(500, ClearFlash, this,  TimerType::OneShot);
+      flash = true;
   }
 }
 
@@ -81,16 +88,21 @@ void KotH::UpdateScreen()
   this->lcd->WriteMessage(msg, 0, Alignment::Left, false);
 
   msg = TickString(t[1]);
-  this->lcd->WriteMessage(msg, 0, Alignment::Right, false);
-
-  msg = TickString(t[2]);
   this->lcd->WriteMessage(msg, 3, Alignment::Left, false);
 
-  msg = TickString(t[3]);
+  msg = TickString(t[2]);
   this->lcd->WriteMessage(msg, 3, Alignment::Right, false);
+
+  msg = TickString(t[3]);
+  this->lcd->WriteMessage(msg, 0, Alignment::Right, false);
 
   msg = TickString(t[KotH_GameTimer]);
   this->lcd->WriteMessage(msg, 1, Alignment::Center, false);
+  
+  if (flash) {
+    msg ="Captured!";
+    this->lcd->WriteMessage(msg, 2, Alignment::Center, false);
+  }
 }
 
 KotH::KotH()

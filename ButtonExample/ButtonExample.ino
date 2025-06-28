@@ -6,7 +6,11 @@
 #include "Lcd.h"
 #include "GameModeRunner.h"
 #include "KotH.h"
+<<<<<<< HEAD
 #include "FifthElement.h"
+=======
+#include "LifeCounter.h"
+>>>>>>> develop
 
 #define LINE_LENGTH 20
 #define NUM_ROWS 4
@@ -16,11 +20,11 @@ static Timers timers;
 static Timer_t *blink;
 static Lcd lcd(4, 20);
 
-#define BUTTON0_PIN D3
-#define BUTTON1_PIN D4
-#define BUTTON2_PIN D5
-#define BUTTON3_PIN D6
-#define BUTTON4_PIN D7
+#define BUTTON0_PIN D6
+#define BUTTON1_PIN D7
+#define BUTTON2_PIN D3
+#define BUTTON3_PIN D4
+#define BUTTON4_PIN D5
 static int ledBlink = LED_BUILTIN ;
 
 void ToggleLED(void *context)
@@ -96,11 +100,14 @@ void setup()
     static FifthElement fifthElement = FifthElement();
     gameModeRunner.AddGameMode(&fifthElement);
 
-    static GameMode g1 = GameMode("Game 1");
-    gameModeRunner.AddGameMode(&g1);
+    static LifeCounter lifecounter = LifeCounter();
+    gameModeRunner.AddGameMode(&lifecounter);
 
-    static GameMode g2 = GameMode("Game 2");
+    static GameMode g2 = GameMode(" --- ");
     gameModeRunner.AddGameMode(&g2);
+
+    static GameMode g3 = GameMode(" --- ");
+    gameModeRunner.AddGameMode(&g3);
 }
 
 void loop()

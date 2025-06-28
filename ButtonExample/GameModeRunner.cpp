@@ -61,7 +61,7 @@ void GameModeRunner::ButtonEvent(int button, ButtonData data)
       }
     }
   }
-  else if(button == ButtonEnum::Button0)
+  else if(button == ButtonEnum::Button2)
   {
     if(data.event == ButtonState::Release)
     {
@@ -70,7 +70,7 @@ void GameModeRunner::ButtonEvent(int button, ButtonData data)
       this->GameSelect();
     }
   }
-  else if(button == ButtonEnum::Button1)
+  else if(button == ButtonEnum::Button3)
   {
     if(data.event == ButtonState::Release)
     {
@@ -87,7 +87,7 @@ void GameModeRunner::ButtonEvent(int button, ButtonData data)
       this->GameSelect();
     }
   }
-  else if(button == ButtonEnum::Button2)
+  else if(button == ButtonEnum::Button1)
   {
     if(data.event == ButtonState::Release)
     {
