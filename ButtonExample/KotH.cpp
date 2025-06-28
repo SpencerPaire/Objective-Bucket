@@ -8,6 +8,11 @@ static void GameOver(void *context)
   instance->Pause();
 }
 
+static void ClearFlash(void *context) {
+  KotH *instance = (KotH*)context;
+  instance->flash = false;
+}
+
 static void UpdateEvent(void *context)
 {
   GameMode *instance = (GameMode*)context;
@@ -48,6 +53,8 @@ void KotH::ButtonEvent(int button, ButtonData data)
       }
       this->timers->Resume(this->gameTimers[button]);
       this->timers->Resume(this->gameTimers[KotH_GameTimer]);
+      this->gameTimers[KotH_FlashTimer] = this->timers->Start(500, ClearFlash, this,  TimerType::OneShot);
+      flash = true;
   }
 }
 
@@ -91,6 +98,11 @@ void KotH::UpdateScreen()
 
   msg = TickString(t[KotH_GameTimer]);
   this->lcd->WriteMessage(msg, 1, Alignment::Center, false);
+  
+  if (flash) {
+    msg ="Captured!";
+    this->lcd->WriteMessage(msg, 2, Alignment::Center, false);
+  }
 }
 
 KotH::KotH()
