@@ -6,6 +6,7 @@
 #include "Lcd.h"
 #include "GameModeRunner.h"
 #include "KotH.h"
+#include "FifthElement.h"
 #include "LifeCounter.h"
 
 #define LINE_LENGTH 20
@@ -93,14 +94,14 @@ void setup()
     static KotH koth = KotH();
     gameModeRunner.AddGameMode(&koth);
 
+    static FifthElement fifthElement = FifthElement();
+    gameModeRunner.AddGameMode(&fifthElement);
+
     static LifeCounter lifecounter = LifeCounter();
     gameModeRunner.AddGameMode(&lifecounter);
 
     static GameMode g2 = GameMode(" --- ");
     gameModeRunner.AddGameMode(&g2);
-
-    static GameMode g3 = GameMode(" --- ");
-    gameModeRunner.AddGameMode(&g3);
 }
 
 void loop()

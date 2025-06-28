@@ -124,7 +124,7 @@ void GameModeRunner::GameSelect()
     {
       int prev = (this->mode == 0) ? this->numGames - 1 : this->mode - 1;
       msg = this->games[prev]->GetName();
-      this->lcd->WriteMessage(msg, 0, 1, false);
+      this->lcd->WriteMessage(msg, 0, 1, true);
     }
 
     int numberOfLines = min(this->lcd->GetRows() - 1, this->numGames);
@@ -132,7 +132,7 @@ void GameModeRunner::GameSelect()
     {
       int game = (this->mode + i) % this->numGames;
       msg = this->games[game]->GetName();
-      this->lcd->WriteMessage(msg, i+1, 1, false); // Allowing line erase causes weird graphical issues
+      this->lcd->WriteMessage(msg, i+1, 1, true);
     }
 
     msg = "*";
