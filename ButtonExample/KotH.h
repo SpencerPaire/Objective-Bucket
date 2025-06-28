@@ -12,8 +12,8 @@ enum KotH_Timers {
   KotH_UpdateTimer,
   KotH_FlashTimer,
   KotH_MaxTeams = KotH_3 + 1,
-  KotH_MaxGameTimers = KotH_UpdateTimer + 1,
-  KotH_MaxTimers = KotH_FlashTimer + 1,
+  KotH_MaxGameTimers = KotH_GameTimer + 1,
+  KotH_MaxTimers = KotH_UpdateTimer + 1,
 };
 
 #define KOTH_TEAMS 4
