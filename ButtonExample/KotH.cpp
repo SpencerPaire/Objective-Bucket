@@ -150,5 +150,6 @@ void KotH::Reset()
     this->gameTimers[i] = this->timers->Start(GAME_TIME, GameOver, this, TimerType::Periodic);
     this->timers->Pause(this->gameTimers[i]);
   }
-  this->gameTimers[KotH_UpdateTimer] = this->timers->Start(500, UpdateEvent, this,  TimerType::Periodic);
+  this->timers->Resume(this->gameTimers[KotH_UpdateTimer]);
+  //this->gameTimers[KotH_UpdateTimer] = this->timers->Start(500, UpdateEvent, this,  TimerType::Periodic);
 }

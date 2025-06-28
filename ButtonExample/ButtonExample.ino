@@ -6,6 +6,7 @@
 #include "Lcd.h"
 #include "GameModeRunner.h"
 #include "KotH.h"
+#include "FifthElement.h"
 
 #define LINE_LENGTH 20
 #define NUM_ROWS 4
@@ -91,6 +92,9 @@ void setup()
 
     static KotH koth = KotH();
     gameModeRunner.AddGameMode(&koth);
+
+    static FifthElement fifthElement = FifthElement();
+    gameModeRunner.AddGameMode(&fifthElement);
 
     static GameMode g1 = GameMode("Game 1");
     gameModeRunner.AddGameMode(&g1);
