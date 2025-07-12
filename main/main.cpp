@@ -19,6 +19,7 @@
 
 #include "esp_log.h"
 #include "esp_system.h"
+#include "portmacro.h"
 
 static const char *TAG = "main";
 
@@ -42,87 +43,84 @@ static const char *TAG = "main";
 #define GPIO_OUTPUT_IO_0 GPIO_NUM_2
 #define GPIO_OUTPUT_IO_1 GPIO_NUM_16
 #define GPIO_OUTPUT_PIN_SEL ((1ULL << GPIO_OUTPUT_IO_0) | (1ULL << GPIO_OUTPUT_IO_1))
-#define GPIO_INPUT_IO_0 GPIO_NUM_4
-#define GPIO_INPUT_IO_1 GPIO_NUM_5
+#define GPIO_INPUT_IO_0 GPIO_NUM_13
+#define GPIO_INPUT_IO_1 GPIO_NUM_0
 #define GPIO_INPUT_PIN_SEL ((1ULL << GPIO_INPUT_IO_0) | (1ULL << GPIO_INPUT_IO_1))
 
-static xQueueHandle gpio_evt_queue = NULL;
+#define NUM_BUTTONS 3
 
-static void gpio_isr_handler(void *arg)
+static xQueueHandle gpioEventQueue = NULL;
+static TickType_t pressTime[NUM_BUTTONS] = { 0 };
+
+class ButtonHandler
 {
-   uint32_t gpio_num = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(arg));
-   xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-}
-
-static void gpio_task_example(void *arg)
-{
-   uint32_t io_num;
-
-   for(;;)
+private:
+public:
+   ButtonHandler()
    {
-      if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY))
+      gpioEventQueue = xQueueCreate(10, sizeof(uint32_t));
+
+      gpio_config_t inputConfig;
+      inputConfig.intr_type = GPIO_INTR_POSEDGE;
+      inputConfig.pin_bit_mask = GPIO_INPUT_PIN_SEL;
+      inputConfig.mode = GPIO_MODE_INPUT;
+      inputConfig.pull_up_en = GPIO_PULLUP_ENABLE;
+      gpio_config(&inputConfig);
+
+      gpio_config_t outputConfig;
+      outputConfig.intr_type = GPIO_INTR_DISABLE;
+      outputConfig.mode = GPIO_MODE_OUTPUT;
+      outputConfig.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;
+      outputConfig.pull_down_en = GPIO_PULLDOWN_DISABLE;
+      outputConfig.pull_up_en = GPIO_PULLUP_DISABLE;
+      gpio_config(&outputConfig);
+
+      gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_ANYEDGE);
+      gpio_install_isr_service(0);
+      gpio_isr_handler_add(GPIO_INPUT_IO_0, GpioIsrHandler, (void *)GPIO_INPUT_IO_0);
+
+      xTaskCreate(GpioTaskExample, "GPIO Task Example", 2048, NULL, 10, NULL);
+   }
+
+   static void GpioIsrHandler(void *arg)
+   {
+      uint32_t gpio_num = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(arg));
+      xQueueSendFromISR(gpioEventQueue, &gpio_num, NULL);
+   }
+
+   static void GpioTaskExample(void *arg)
+   {
+      uint32_t io_num;
+
+      for(;;)
       {
-         ESP_LOGI(TAG, "GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(static_cast<gpio_num_t>(io_num)));
+         if(xQueueReceive(gpioEventQueue, &io_num, portMAX_DELAY))
+         {
+            TickType_t now = xTaskGetTickCount();
+            if(now - pressTime[io_num] > 20)
+            {
+               ESP_LOGI(TAG, "GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(static_cast<gpio_num_t>(io_num)));
+               gpio_set_level(GPIO_OUTPUT_IO_0, !gpio_get_level(GPIO_OUTPUT_IO_0));
+               pressTime[io_num] = now;
+            }
+         }
       }
    }
-}
+};
 
 extern "C"
 {
    void app_main(void)
    {
-      gpio_config_t io_conf;
-      // disable interrupt
-      io_conf.intr_type = GPIO_INTR_DISABLE;
-      // set as output mode
-      io_conf.mode = GPIO_MODE_OUTPUT;
-      // bit mask of the pins that you want to set,e.g.GPIO15/16
-      io_conf.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;
-      // disable pull-down mode
-      io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-      // disable pull-up mode
-      io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-      // configure GPIO with the given settings
-      gpio_config(&io_conf);
+      ButtonHandler();
+      // int cnt = 0;
 
-      // interrupt of rising edge
-      io_conf.intr_type = GPIO_INTR_POSEDGE;
-      // bit mask of the pins, use GPIO4/5 here
-      io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
-      // set as input mode
-      io_conf.mode = GPIO_MODE_INPUT;
-      // enable pull-up mode
-      io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
-      gpio_config(&io_conf);
-
-      // change gpio intrrupt type for one pin
-      gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_ANYEDGE);
-
-      // create a queue to handle gpio event from isr
-      gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-      // start gpio task
-      xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
-
-      // install gpio isr service
-      gpio_install_isr_service(0);
-      // hook isr handler for specific gpio pin
-      gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void *)GPIO_INPUT_IO_0);
-      // hook isr handler for specific gpio pin
-      gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void *)GPIO_INPUT_IO_1);
-
-      // remove isr handler for gpio number.
-      gpio_isr_handler_remove(GPIO_INPUT_IO_0);
-      // hook isr handler for specific gpio pin again
-      gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void *)GPIO_INPUT_IO_0);
-
-      int cnt = 0;
-
-      while(1)
-      {
-         ESP_LOGI(TAG, "cnt: %d\n", cnt++);
-         vTaskDelay(1000 / portTICK_RATE_MS);
-         gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
-         gpio_set_level(GPIO_OUTPUT_IO_1, cnt % 2);
-      }
+      //while(1)
+      //{
+         // ESP_LOGI(TAG, "cnt: %d\n", cnt++);
+         // vTaskDelay(1000 / portTICK_RATE_MS);
+         // gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2);
+         // gpio_set_level(GPIO_OUTPUT_IO_1, cnt % 2);
+      //}
    }
 }
