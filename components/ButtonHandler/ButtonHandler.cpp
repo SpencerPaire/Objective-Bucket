@@ -1,35 +1,71 @@
 #include <cstring>
+#include <unordered_map>
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "portmacro.h"
 
 #include "ButtonHandler.h"
-#include "portmacro.h"
 
 static const char *TAG = "ButtonHandler";
 
 static const TickType_t DEBOUNCE_DELAY = pdMS_TO_TICKS(20);
 
-static uint32_t buttonStates = 0;
-static uint32_t configuredInputPins = 0;
-static QueueHandle_t buttonEventQueue = NULL;
+static uint32_t states = 0;
+static uint32_t configuredPins = 0;
+static QueueHandle_t eventQueue = NULL;
+static std::unordered_map<ButtonEventCallback_t, void *> eventCallbacks;
+static SemaphoreHandle_t callbackMutex = NULL;
+static TaskHandle_t eventHandlerTaskHandle = NULL;
+static TaskHandle_t pollingTaskHandle = NULL;
 
+ButtonState_t ButtonHandler::GetState(const gpio_num_t pin)
+{
+   if(configuredPins & BIT(pin))
+   {
+      return (states & BIT(pin)) ? BUTTON_STATE_RELEASED : BUTTON_STATE_PRESSED;
+   }
+   return BUTTON_STATE_UNCONFIGURED;
+}
 void ButtonHandler::RegisterButton(const gpio_num_t pin)
 {
-   SET(configuredInputPins, pin);
+   SET(configuredPins, pin);
 }
 
 void ButtonHandler::DeregisterButton(const gpio_num_t pin)
 {
-   UNSET(configuredInputPins, pin);
+   UNSET(configuredPins, pin);
 }
 
 void ButtonHandler::StartPolling()
 {
-   buttonEventQueue = xQueueCreate(20, sizeof(ButtonEvent_t));
-   xTaskCreate(PollingTask, "Button Polling Task", 2048, NULL, configMAX_PRIORITIES - 1, NULL);
-   xTaskCreate(EventHandlerTask, "Button Event Handler Task", 2048, NULL, configMAX_PRIORITIES - 2, NULL);
+   eventQueue = xQueueCreate(20, sizeof(ButtonEvent_t));
+   callbackMutex = xSemaphoreCreateMutex();
+   xTaskCreate(
+      PollingTask,
+      "Button Polling Task",
+      2048,
+      NULL,
+      configMAX_PRIORITIES - 1,
+      &pollingTaskHandle);
+   xTaskCreate(
+      EventHandlerTask,
+      "Button Event Handler Task",
+      2048,
+      NULL,
+      configMAX_PRIORITIES - 2,
+      &eventHandlerTaskHandle);
+}
+
+void ButtonHandler::StopPolling()
+{
+   vTaskDelete(pollingTaskHandle);
+   vTaskDelete(eventHandlerTaskHandle);
 }
 
 void ButtonHandler::PollingTask(void *arg)
@@ -37,35 +73,47 @@ void ButtonHandler::PollingTask(void *arg)
    uint32_t previousValue = 0;
    for(;;)
    {
-      for(int pin = 0; pin < GPIO_NUM_MAX; pin++)
+      for(int pin = GPIO_NUM_0; pin < GPIO_NUM_MAX; pin++)
       {
-         if(BitCheck(configuredInputPins, pin))
+         if(BitCheck(configuredPins, pin))
          {
-            gpio_get_level(static_cast<gpio_num_t>(pin)) ? SET(buttonStates, pin) : UNSET(buttonStates, pin);
+            gpio_get_level(static_cast<gpio_num_t>(pin)) ? SET(states, pin) : UNSET(states, pin);
             vTaskDelay(DEBOUNCE_DELAY);
-         }
 
-         if(!BitCheck(previousValue, pin) && BitCheck(buttonStates, pin))
-         {
-            SET(previousValue, pin);
-            ESP_LOGD(TAG, "GPIO[%d] intr, val: 1\n", pin);
-            TickType_t timestamp = xTaskGetTickCount();
-            ButtonEvent_t evt = { .eventType = BUTTON_EVENT_TYPE_PRESS, .timestamp = timestamp };
-            if(!xQueueSendToBack(buttonEventQueue, &evt, 0))
+            if(!BitCheck(previousValue, pin) && BitCheck(states, pin))
             {
-               ESP_LOGW(TAG, "OVERFLOW PRESS!\n");
+               SET(previousValue, pin);
+               ESP_LOGD(TAG, "GPIO[%d] val: 1\n", pin);
+
+               TickType_t timestamp = xTaskGetTickCount();
+               ButtonEvent_t evt = {
+                  .pin = static_cast<gpio_num_t>(pin),
+                  .eventType = BUTTON_EVENT_TYPE_RELEASE,
+                  .timestamp = timestamp * portTICK_RATE_MS
+               };
+
+               if(!xQueueSendToBack(eventQueue, &evt, 0))
+               {
+                  ESP_LOGW(TAG, "OVERFLOW PRESS!\n");
+               }
             }
-         }
-         else if(BitCheck(previousValue, pin) && !BitCheck(buttonStates, pin))
-         {
-            UNSET(previousValue, pin);
-            uint32_t timestamp = xTaskGetTickCount();
-            ButtonEvent_t evt = { .eventType = BUTTON_EVENT_TYPE_RELEASE, .timestamp = timestamp };
-            if(!xQueueSendToBack(buttonEventQueue, &evt, 0))
+            else if(BitCheck(previousValue, pin) && !BitCheck(states, pin))
             {
-               ESP_LOGW(TAG, "OVERFLOW RELEASE!\n");
+               UNSET(previousValue, pin);
+               ESP_LOGD(TAG, "GPIO[%d] val: 0\n", pin);
+
+               uint32_t timestamp = xTaskGetTickCount();
+               ButtonEvent_t evt = {
+                  .pin = static_cast<gpio_num_t>(pin),
+                  .eventType = BUTTON_EVENT_TYPE_PRESS,
+                  .timestamp = timestamp * portTICK_RATE_MS
+               };
+
+               if(!xQueueSendToBack(eventQueue, &evt, 0))
+               {
+                  ESP_LOGW(TAG, "OVERFLOW RELEASE!\n");
+               }
             }
-            ESP_LOGD(TAG, "GPIO[%d] intr, val: 0\n", pin);
          }
       }
    }
@@ -73,4 +121,28 @@ void ButtonHandler::PollingTask(void *arg)
 
 void ButtonHandler::EventHandlerTask(void *arg)
 {
+   for(;;)
+   {
+      ButtonEvent_t evt;
+      if(xQueueReceive(eventQueue, &evt, portMAX_DELAY))
+      {
+         ESP_LOGD(TAG, "button: %d event: %d timestamp: %d\n", evt.pin, evt.eventType, evt.timestamp);
+         xSemaphoreTake(callbackMutex, 0);
+         for(auto it = eventCallbacks.cbegin(); it != eventCallbacks.end(); ++it)
+         {
+            it->first(it->second, &evt);
+         }
+         xSemaphoreGive(callbackMutex);
+      }
+   }
+}
+
+void ButtonHandler::RegisterCallback(ButtonEventCallback_t callback, void *context)
+{
+   eventCallbacks[callback] = context;
+}
+
+void ButtonHandler::DeregisterCallback(ButtonEventCallback_t callback)
+{
+   eventCallbacks.erase(callback);
 }

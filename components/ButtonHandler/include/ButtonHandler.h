@@ -1,10 +1,6 @@
 #ifndef BUTTONHANDLER_H
 #define BUTTONHANDLER_H
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/task.h"
-
 #include "driver/gpio.h"
 #include "portmacro.h"
 
@@ -28,6 +24,14 @@ constexpr bool BitCheck(unsigned bitmap, unsigned bit)
    return (bitmap >> bit) & 1U;
 }
 
+enum ButtonState_t
+{
+   BUTTON_STATE_PRESSED,
+   BUTTON_STATE_RELEASED,
+   BUTTON_STATE_MAX,
+   BUTTON_STATE_UNCONFIGURED
+};
+
 enum ButtonEventType_t
 {
    BUTTON_EVENT_TYPE_PRESS = 0,
@@ -36,9 +40,11 @@ enum ButtonEventType_t
    BUTTON_EVENT_TYPE_MAX
 };
 
-typedef void (*ButtonEventCallback_t)(void *);
+typedef void (*ButtonEventCallback_t)(void *context, const void *arg);
+
 typedef struct
 {
+   gpio_num_t pin;
    ButtonEventType_t eventType;
    TickType_t timestamp;
 } ButtonEvent_t;
@@ -55,10 +61,13 @@ public:
       static ButtonHandler instance;
       return instance;
    }
+   ButtonState_t GetState(const gpio_num_t pin);
    void RegisterButton(const gpio_num_t pin);
    void DeregisterButton(const gpio_num_t pin);
    void StartPolling();
-   void RegisterCallback(ButtonEventCallback_t, const void *arg);
+   void StopPolling();
+   void RegisterCallback(ButtonEventCallback_t callback, void *context);
+   void DeregisterCallback(ButtonEventCallback_t callback);
 };
 
 #endif // BUTTONHANDLER_H
