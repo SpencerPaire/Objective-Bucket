@@ -1,21 +1,12 @@
 #ifndef BUTTONHANDLER_H
 #define BUTTONHANDLER_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "esp8266/eagle_soc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
 #include "driver/gpio.h"
-
-#include "esp_log.h"
-#include "esp_system.h"
 #include "portmacro.h"
-#include "projdefs.h"
 
 #define D0 GPIO_NUM_16
 #define D1 GPIO_NUM_5
@@ -29,11 +20,6 @@
 #define RX GPIO_NUM_3
 #define TX GPIO_NUM_1
 
-#define GPIO_OUTPUT_IO_0 D4
-#define GPIO_OUTPUT_PIN_SEL (BIT(GPIO_OUTPUT_IO_0))
-#define GPIO_INPUT_IO_0 D7
-#define GPIO_INPUT_PIN_SEL (BIT(GPIO_INPUT_IO_0))
-
 #define SET(bitmap, bit) bitmap |= BIT(bit)
 #define UNSET(bitmap, bit) bitmap &= ~BIT(bit)
 
@@ -42,16 +28,37 @@ constexpr bool BitCheck(unsigned bitmap, unsigned bit)
    return (bitmap >> bit) & 1U;
 }
 
+enum ButtonEventType_t
+{
+   BUTTON_EVENT_TYPE_PRESS = 0,
+   BUTTON_EVENT_TYPE_RELEASE = 1,
+   BUTTON_EVENT_TYPE_HOLD = 2,
+   BUTTON_EVENT_TYPE_MAX
+};
+
+typedef void (*ButtonEventCallback_t)(void *);
+typedef struct
+{
+   ButtonEventType_t eventType;
+   TickType_t timestamp;
+} ButtonEvent_t;
+
 class ButtonHandler
 {
 private:
    static void PollingTask(void *arg);
+   static void EventHandlerTask(void *arg);
 
 public:
-   static ButtonHandler &GetInstance();
-   static void RegisterButton(const gpio_num_t pin);
-   static void DeregisterButton(const gpio_num_t pin);
-   static void StartPolling();
+   static ButtonHandler &GetInstance()
+   {
+      static ButtonHandler instance;
+      return instance;
+   }
+   void RegisterButton(const gpio_num_t pin);
+   void DeregisterButton(const gpio_num_t pin);
+   void StartPolling();
+   void RegisterCallback(ButtonEventCallback_t, const void *arg);
 };
 
 #endif // BUTTONHANDLER_H

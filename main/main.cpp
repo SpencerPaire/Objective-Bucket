@@ -1,22 +1,21 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "esp8266/eagle_soc.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/task.h"
-
 #include "driver/gpio.h"
 
 #include "esp_log.h"
-#include "esp_system.h"
-#include "portmacro.h"
-#include "projdefs.h"
 
 #include "ButtonHandler.h"
+#include "portmacro.h"
+
+#define GPIO_OUTPUT_IO_0 D4
+#define GPIO_OUTPUT_PIN_SEL (BIT(GPIO_OUTPUT_IO_0))
+#define GPIO_INPUT_IO_0 D7
+#define GPIO_INPUT_PIN_SEL (BIT(GPIO_INPUT_IO_0))
 
 static const char *TAG = "main";
+
+void test(void *arg)
+{
+   gpio_set_level(GPIO_OUTPUT_IO_0, !gpio_get_level(GPIO_OUTPUT_IO_0));
+}
 
 extern "C"
 {
@@ -42,5 +41,6 @@ extern "C"
       ButtonHandler &buttonHandler = ButtonHandler::GetInstance();
       buttonHandler.RegisterButton(GPIO_INPUT_IO_0);
       buttonHandler.StartPolling();
+      // buttonHandler.RegisterCallback(test, NULL);
    }
 }
