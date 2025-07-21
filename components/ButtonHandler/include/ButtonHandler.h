@@ -1,6 +1,8 @@
 #ifndef BUTTONHANDLER_H
 #define BUTTONHANDLER_H
 
+#include <any>
+#include <functional>
 #include "driver/gpio.h"
 #include "portmacro.h"
 
@@ -24,7 +26,7 @@ constexpr bool BitCheck(unsigned bitmap, unsigned bit)
    return (bitmap >> bit) & 1U;
 }
 
-enum ButtonState_t
+enum ButtonState
 {
    BUTTON_STATE_PRESSED,
    BUTTON_STATE_RELEASED,
@@ -32,7 +34,7 @@ enum ButtonState_t
    BUTTON_STATE_UNCONFIGURED
 };
 
-enum ButtonEventType_t
+enum ButtonEventType
 {
    BUTTON_EVENT_TYPE_PRESS = 0,
    BUTTON_EVENT_TYPE_RELEASE = 1,
@@ -40,14 +42,15 @@ enum ButtonEventType_t
    BUTTON_EVENT_TYPE_MAX
 };
 
-typedef void (*ButtonEventCallback_t)(void *context, const void *arg);
+typedef std::function<void(std::any, const std::any)> ButtonEventCallback;
+typedef uint32_t CallbackId;
 
 typedef struct
 {
    gpio_num_t pin;
-   ButtonEventType_t eventType;
+   ButtonEventType eventType;
    TickType_t timestamp;
-} ButtonEvent_t;
+} ButtonEvent;
 
 class ButtonHandler
 {
@@ -61,13 +64,14 @@ public:
       static ButtonHandler instance;
       return instance;
    }
-   ButtonState_t GetState(const gpio_num_t pin);
+   ButtonState GetState(const gpio_num_t pin);
    void RegisterButton(const gpio_num_t pin);
    void DeregisterButton(const gpio_num_t pin);
    void StartPolling();
+   void SuspendPolling();
    void StopPolling();
-   void RegisterCallback(ButtonEventCallback_t callback, void *context);
-   void DeregisterCallback(ButtonEventCallback_t callback);
+   CallbackId RegisterCallback(ButtonEventCallback callback, std::any context);
+   void DeregisterCallback(CallbackId callback);
 };
 
 #endif // BUTTONHANDLER_H

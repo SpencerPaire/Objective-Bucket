@@ -12,6 +12,8 @@
 
 #include "ButtonHandler.h"
 
+#define MAX_CALLBACKS 50
+
 static const char *TAG = "ButtonHandler";
 
 static const TickType_t DEBOUNCE_DELAY = pdMS_TO_TICKS(20);
@@ -19,12 +21,13 @@ static const TickType_t DEBOUNCE_DELAY = pdMS_TO_TICKS(20);
 static uint32_t states = 0;
 static uint32_t configuredPins = 0;
 static QueueHandle_t eventQueue = NULL;
-static std::unordered_map<ButtonEventCallback_t, void *> eventCallbacks;
+static std::unordered_map<CallbackId, std::pair<ButtonEventCallback, std::any>> eventCallbacks;
+static CallbackId nextAvailableCallbackId = 0;
 static SemaphoreHandle_t callbackMutex = NULL;
 static TaskHandle_t eventHandlerTaskHandle = NULL;
 static TaskHandle_t pollingTaskHandle = NULL;
 
-ButtonState_t ButtonHandler::GetState(const gpio_num_t pin)
+ButtonState ButtonHandler::GetState(const gpio_num_t pin)
 {
    if(configuredPins & BIT(pin))
    {
@@ -44,8 +47,14 @@ void ButtonHandler::DeregisterButton(const gpio_num_t pin)
 
 void ButtonHandler::StartPolling()
 {
-   eventQueue = xQueueCreate(20, sizeof(ButtonEvent_t));
-   callbackMutex = xSemaphoreCreateMutex();
+   if(!eventQueue)
+   {
+      eventQueue = xQueueCreate(20, sizeof(ButtonEvent));
+   }
+   if(!callbackMutex)
+   {
+      callbackMutex = xSemaphoreCreateMutex();
+   }
    xTaskCreate(
       PollingTask,
       "Button Polling Task",
@@ -62,10 +71,27 @@ void ButtonHandler::StartPolling()
       &eventHandlerTaskHandle);
 }
 
+void ButtonHandler::SuspendPolling()
+{
+   vTaskSuspend(pollingTaskHandle);
+   vTaskSuspend(eventHandlerTaskHandle);
+}
+
 void ButtonHandler::StopPolling()
 {
    vTaskDelete(pollingTaskHandle);
    vTaskDelete(eventHandlerTaskHandle);
+}
+
+CallbackId ButtonHandler::RegisterCallback(ButtonEventCallback callback, std::any context)
+{
+   eventCallbacks[nextAvailableCallbackId] = std::pair(callback, context);
+   return nextAvailableCallbackId++;
+}
+
+void ButtonHandler::DeregisterCallback(CallbackId callbackId)
+{
+   eventCallbacks.erase(callbackId);
 }
 
 void ButtonHandler::PollingTask(void *arg)
@@ -86,7 +112,7 @@ void ButtonHandler::PollingTask(void *arg)
                ESP_LOGD(TAG, "GPIO[%d] val: 1\n", pin);
 
                TickType_t timestamp = xTaskGetTickCount();
-               ButtonEvent_t evt = {
+               ButtonEvent evt = {
                   .pin = static_cast<gpio_num_t>(pin),
                   .eventType = BUTTON_EVENT_TYPE_RELEASE,
                   .timestamp = timestamp * portTICK_RATE_MS
@@ -103,7 +129,7 @@ void ButtonHandler::PollingTask(void *arg)
                ESP_LOGD(TAG, "GPIO[%d] val: 0\n", pin);
 
                uint32_t timestamp = xTaskGetTickCount();
-               ButtonEvent_t evt = {
+               ButtonEvent evt = {
                   .pin = static_cast<gpio_num_t>(pin),
                   .eventType = BUTTON_EVENT_TYPE_PRESS,
                   .timestamp = timestamp * portTICK_RATE_MS
@@ -123,26 +149,18 @@ void ButtonHandler::EventHandlerTask(void *arg)
 {
    for(;;)
    {
-      ButtonEvent_t evt;
+      ButtonEvent evt;
       if(xQueueReceive(eventQueue, &evt, portMAX_DELAY))
       {
          ESP_LOGD(TAG, "button: %d event: %d timestamp: %d\n", evt.pin, evt.eventType, evt.timestamp);
          xSemaphoreTake(callbackMutex, 0);
-         for(auto it = eventCallbacks.cbegin(); it != eventCallbacks.end(); ++it)
+         for(auto &[_, pair] : eventCallbacks)
          {
-            it->first(it->second, &evt);
+            auto &callback = pair.first;
+            auto &context = pair.second;
+            callback(context, evt);
          }
          xSemaphoreGive(callbackMutex);
       }
    }
-}
-
-void ButtonHandler::RegisterCallback(ButtonEventCallback_t callback, void *context)
-{
-   eventCallbacks[callback] = context;
-}
-
-void ButtonHandler::DeregisterCallback(ButtonEventCallback_t callback)
-{
-   eventCallbacks.erase(callback);
 }

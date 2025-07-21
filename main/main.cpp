@@ -12,12 +12,12 @@
 
 static const char *TAG = "main";
 
-void test(void *context, const void *arg)
+void test(std::any context, const std::any arg)
 {
-   auto buttonEvent = static_cast<const ButtonEvent_t *>(arg);
-   if(buttonEvent->pin == BUTTON_0_PIN)
+   auto buttonEvent = std::any_cast<const ButtonEvent>(arg);
+   if(buttonEvent.pin == BUTTON_0_PIN)
    {
-      if(buttonEvent->eventType == BUTTON_EVENT_TYPE_RELEASE)
+      if(buttonEvent.eventType == BUTTON_EVENT_TYPE_RELEASE)
       {
          gpio_set_level(GPIO_OUTPUT_IO_0, !gpio_get_level(GPIO_OUTPUT_IO_0));
       }
