@@ -6,18 +6,6 @@
 #include "driver/gpio.h"
 #include "portmacro.h"
 
-#define D0 GPIO_NUM_16
-#define D1 GPIO_NUM_5
-#define D2 GPIO_NUM_4
-#define D3 GPIO_NUM_0
-#define D4 GPIO_NUM_2
-#define D5 GPIO_NUM_14
-#define D6 GPIO_NUM_12
-#define D7 GPIO_NUM_13
-#define D8 GPIO_NUM_15
-#define RX GPIO_NUM_3
-#define TX GPIO_NUM_1
-
 #define SET(bitmap, bit) bitmap |= BIT(bit)
 #define UNSET(bitmap, bit) bitmap &= ~BIT(bit)
 
