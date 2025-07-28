@@ -4,6 +4,10 @@
 #include <any>
 #include <functional>
 #include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "portmacro.h"
 
 #define SET(bitmap, bit) bitmap |= BIT(bit)
@@ -30,8 +34,7 @@ enum ButtonEventType
    BUTTON_EVENT_TYPE_MAX
 };
 
-typedef std::function<void(std::any, const std::any)> ButtonEventCallback;
-typedef uint32_t CallbackId;
+typedef void (*ButtonEventCallback)(std::any context, const std::any);
 
 typedef struct
 {
@@ -43,13 +46,21 @@ typedef struct
 class ButtonHandler
 {
 private:
+   uint16_t states = 0;
+   uint16_t configuredPins = 0;
+   QueueHandle_t eventQueue = NULL;
+   std::unordered_map<ButtonEventCallback, std::any> eventCallbacks;
+   SemaphoreHandle_t callbackMutex = NULL;
+   TaskHandle_t eventHandlerTaskHandle = NULL;
+   TaskHandle_t pollingTaskHandle = NULL;
+
    static void PollingTask(void *arg);
    static void EventHandlerTask(void *arg);
 
 public:
+   static ButtonHandler instance;
    static ButtonHandler &GetInstance()
    {
-      static ButtonHandler instance;
       return instance;
    }
    ButtonState GetState(const gpio_num_t pin);
@@ -58,8 +69,8 @@ public:
    void StartPolling();
    void SuspendPolling();
    void StopPolling();
-   CallbackId RegisterCallback(ButtonEventCallback callback, std::any context);
-   void DeregisterCallback(CallbackId callback);
+   void RegisterCallback(ButtonEventCallback callback, std::any context);
+   void DeregisterCallback(ButtonEventCallback callback);
 };
 
 #endif // BUTTONHANDLER_H
