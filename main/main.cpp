@@ -38,7 +38,7 @@ static const char *TAG = "main";
 
 void test(std::any context, const std::any arg)
 {
-   auto buttonEvent = std::any_cast<const ButtonEvent>(arg);
+   const auto buttonEvent = std::any_cast<const ButtonEvent>(arg);
    if(buttonEvent.pin == BUTTON_0_PIN)
    {
       if(buttonEvent.eventType == BUTTON_EVENT_TYPE_RELEASE)
@@ -74,78 +74,127 @@ void i2c_task(void *arg)
 
    // 8bit x3
    i2c_master_start(cmd);
-   i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
    i2c_master_write_byte(cmd, LD4 | LD5 | EN, 0x1);
    i2c_master_write_byte(cmd, LD4 | LD5, 0x1);
    i2c_master_stop(cmd);
    ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   vTaskDelay(pdMS_TO_TICKS(100));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
    i2c_master_start(cmd);
-   i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
    i2c_master_write_byte(cmd, LD4 | LD5 | EN, 0x1);
    i2c_master_write_byte(cmd, LD4 | LD5, 0x1);
    i2c_master_stop(cmd);
    ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   vTaskDelay(pdMS_TO_TICKS(100));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
    i2c_master_start(cmd);
-   i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
    i2c_master_write_byte(cmd, LD4 | LD5 | EN, 0x1);
    i2c_master_write_byte(cmd, LD4 | LD5, 0x1);
    i2c_master_stop(cmd);
    ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   vTaskDelay(pdMS_TO_TICKS(100));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
    // Set 4-bit
    i2c_master_start(cmd);
-   i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
    i2c_master_write_byte(cmd, LD5 | EN, 0x1);
    i2c_master_write_byte(cmd, LD5, 0x1);
    i2c_master_stop(cmd);
    ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   vTaskDelay(pdMS_TO_TICKS(100));
+   vTaskDelay(pdMS_TO_TICKS(500));
+
+   // Set 4-bit, 2-line, 5x8 char
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, LD5 | EN, 0x1);
+   i2c_master_write_byte(cmd, LD5, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, LD7 | EN, 0x1);
+   i2c_master_write_byte(cmd, LD7, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
    // Set Display And Cursor On
    i2c_master_start(cmd);
-   i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
    i2c_master_write_byte(cmd, EN, 0x1);
    i2c_master_write_byte(cmd, 0, 0x1);
-   i2c_master_write_byte(cmd, LD7 | LD6 | LD5 | EN, 0x1);
-   i2c_master_write_byte(cmd, LD7 | LD6 | LD5, 0x1);
    i2c_master_stop(cmd);
    ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   vTaskDelay(pdMS_TO_TICKS(100));
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, LD7 | LD6 | LD5 | EN, 0x1);
+   i2c_master_write_byte(cmd, LD7 | LD6 | LD5 | BL, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
-   // i2c_master_start(cmd);
-   // i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
-   // i2c_master_write_byte(cmd, 0b00100000, 0x1);
-   // i2c_master_write_byte(cmd, 0b00000000, 0x1);
-   // i2c_master_write_byte(cmd, 0b00101000, 0x1);
-   // i2c_master_write_byte(cmd, 0b00001000, 0x1);
-   // i2c_master_stop(cmd);
-   // ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   // vTaskDelay(pdMS_TO_TICKS(100));
+   // Entry mode set
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, EN, 0x1);
+   i2c_master_write_byte(cmd, 0, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, LD6 | LD5 | EN, 0x1);
+   i2c_master_write_byte(cmd, LD6 | LD5 | BL, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
-   // i2c_master_start(cmd);
-   // i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
-   // i2c_master_write_byte(cmd, 0b00100000, 0x1);
-   // i2c_master_write_byte(cmd, 0b00000000, 0x1);
-   // i2c_master_write_byte(cmd, 0b00100110, 0x1);
-   // i2c_master_write_byte(cmd, 0b00000110, 0x1);
-   // i2c_master_stop(cmd);
-   // ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   // vTaskDelay(pdMS_TO_TICKS(100));
+   // Return home
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, EN, 0x1);
+   i2c_master_write_byte(cmd, 0, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, LD5 | EN, 0x1);
+   i2c_master_write_byte(cmd, LD5 | BL, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
-   // i2c_master_start(cmd);
-   // i2c_master_write_byte(cmd, (0x3F << 1) | I2C_MASTER_WRITE, 0x1);
-   // i2c_master_write_byte(cmd, 0b10100100, 0x1);
-   // i2c_master_write_byte(cmd, 0b10000100, 0x1);
-   // i2c_master_write_byte(cmd, 0b10101000, 0x1);
-   // i2c_master_write_byte(cmd, 0b10001000, 0x1);
-   // i2c_master_stop(cmd);
-   // ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
-   // vTaskDelay(pdMS_TO_TICKS(100));
+   // Write data
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, RS | LD6 | EN, 0x1);
+   i2c_master_write_byte(cmd, RS | LD6, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, RS | LD7 | EN, 0x1);
+   i2c_master_write_byte(cmd, RS | LD7 | BL, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   vTaskDelay(pdMS_TO_TICKS(500));
+
+   // Return home
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, EN, 0x1);
+   i2c_master_write_byte(cmd, 0, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   i2c_master_start(cmd);
+   i2c_master_write_byte(cmd, (0x27 << 1) | I2C_MASTER_WRITE, 0x1);
+   i2c_master_write_byte(cmd, LD5 | EN, 0x1);
+   i2c_master_write_byte(cmd, LD5 | BL, 0x1);
+   i2c_master_stop(cmd);
+   ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS));
+   vTaskDelay(pdMS_TO_TICKS(500));
 
    i2c_cmd_link_delete(cmd);
 
