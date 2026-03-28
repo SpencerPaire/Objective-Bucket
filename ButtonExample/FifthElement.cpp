@@ -100,12 +100,14 @@ void FifthElement::UpdateScreen()
     }
   }
 
-  String msg = "*";
-
+  String msg = "Air!";
   if(pressed[ButtonEnum::Button0]) { this->lcd->WriteMessage(msg, 0, Alignment::Left, false); }
-  if(pressed[ButtonEnum::Button1]) { this->lcd->WriteMessage(msg, 0, Alignment::Right, false); }
-  if(pressed[ButtonEnum::Button2]) { this->lcd->WriteMessage(msg, 3, Alignment::Left, false); }
-  if(pressed[ButtonEnum::Button3]) { this->lcd->WriteMessage(msg, 3, Alignment::Right, false); }
+  msg = "Earth!";
+  if(pressed[ButtonEnum::Button1]) { this->lcd->WriteMessage(msg, 3, Alignment::Left, false); }
+  msg = "Fire!";
+  if(pressed[ButtonEnum::Button2]) { this->lcd->WriteMessage(msg, 3, Alignment::Right, false); }
+  msg = "Water!";
+  if(pressed[ButtonEnum::Button3]) { this->lcd->WriteMessage(msg, 0, Alignment::Right, false); }
 
   msg = TickString(t);
   this->lcd->WriteMessage(msg, 1, Alignment::Center, false);
