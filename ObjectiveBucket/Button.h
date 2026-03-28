@@ -36,6 +36,8 @@ public:
   Button(int pin, Timers *timers, ButtonCallback callback = NULL, void* context = NULL, Ticks_t holdTime = 1000, bool inverted = true);
   void Poll(void);
   ButtonData State(void);
+  void SetHoldTime(Ticks_t holdTime);
+  void Subscribe(ButtonCallback callback = NULL, void* context = NULL);
 };
 
 #endif
