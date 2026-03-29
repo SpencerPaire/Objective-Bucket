@@ -1,110 +1,84 @@
 #include <Wire.h>
 #include <hd44780.h>
 #include <hd44780ioClass/hd44780_I2Cexp.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
+#include <ESPAsyncWebServer.h>
 #include "Timers.h"
 #include "Button.h"
 #include "Lcd.h"
 #include "GameModeRunner.h"
+#include "WebServer.h"
 #include "KotH.h"
 #include "FifthElement.h"
 #include "LifeCounter.h"
 
 #define LINE_LENGTH 20
-#define NUM_ROWS 4
-#define MAX_BUFFER_LENGTH (LINE_LENGTH + 1)
+#define NUM_ROWS    4
 
 static Timers timers;
-static Timer_t *blink;
-static Lcd lcd(4, 20);
+static Lcd    lcd(NUM_ROWS, LINE_LENGTH);
 
 #define BUTTON0_PIN D6
 #define BUTTON1_PIN D7
 #define BUTTON2_PIN D3
 #define BUTTON3_PIN D4
 #define BUTTON4_PIN D5
-static int ledBlink = LED_BUILTIN ;
 
-void ToggleLED(void *context)
-{
-    // DOES NOT WORK, shared pin with button1
-    int led = *(int*)context;
-    digitalWrite(led, !digitalRead(led));
-    //Serial.println("Heartbeat");
-}
+static OBWebServer *webServer = nullptr;
 
-void UpdateLcd(void *context)
-{
-    lcd.Update();
-}
-
-void ButtonEvent(void *context, ButtonData data)
-{
-    Timer_t *blink = (Timer_t *)context;
-    if(data.event == ButtonState::Press)
-    {
-        Serial.printf("Button pressed after %d ms\n", data.releasedTime);
-        timers.Pause(blink);
-    }
-    else if(data.event == ButtonState::Release)
-    {
-        Serial.printf("Button released after %d ms\n", data.holdTime);
-        timers.Resume(blink);
-    }
-    else if(data.event == ButtonState::Hold)
-    {
-        Serial.printf("Button held for %d ms\n", data.holdTime);
-    }
-}
+void UpdateLcd(void *context) { lcd.Update(); }
 
 void setup()
 {
-    Serial.begin(9600);
-    //pinMode(ledBlink , OUTPUT);
-    //digitalWrite(ledBlink , true);
-    Serial.println("Power On");
+  Serial.begin(9600);
+  Serial.println("Power On");
 
-    String msg = "Hello, World!";
-    lcd.WriteMessage(msg, 0, 0);
+  delay(5000);
+  lcd.Init();
+  lcd.WriteMessage("Objective Bucket", 0, Alignment::Center);
+  lcd.WriteMessage("Starting WiFi...", 2, Alignment::Center);
+  lcd.Update();
 
-    //blink = timers.Start(500, ToggleLED, &ledBlink, TimerType::Periodic);
-    timers.Start(100, UpdateLcd, NULL, TimerType::Periodic);
+  static Button button0    = Button(BUTTON0_PIN, &timers);
+  static Button button1    = Button(BUTTON1_PIN, &timers);
+  static Button button2    = Button(BUTTON2_PIN, &timers);
+  static Button button3    = Button(BUTTON3_PIN, &timers);
+  static Button buttonReset = Button(BUTTON4_PIN, &timers);
 
-    static Button button0 = Button(BUTTON0_PIN, &timers);
-    static Button button1 = Button(BUTTON1_PIN, &timers);
-    static Button button2 = Button(BUTTON2_PIN, &timers);
-    static Button button3 = Button(BUTTON3_PIN, &timers);
-    static Button buttonReset = Button(BUTTON4_PIN, &timers);
+  static Button *buttons[] = {
+    &button0, &button1, &button2, &button3, &buttonReset,
+  };
 
-    static Button *buttons[] =
-    {
-        &button0,
-        &button1,
-        &button2,
-        &button3,
-        &buttonReset,
-    };
+  static KotH         koth;
+  static FifthElement fifthElement;
+  static LifeCounter  lifecounter;
+  static GameMode     separator(" --- ");
 
-    delay(5000);
+  static GameModeRunner runner(&timers, buttons, &lcd);
+  runner.AddGameMode(&koth);
+  runner.AddGameMode(&fifthElement);
+  runner.AddGameMode(&lifecounter);
+  runner.AddGameMode(&separator);
 
-    lcd.Init();
+  static OBWebServer ws(&runner);
+  webServer = &ws;
+  webServer->Begin();
 
-    lcd.ClearScreen();
-    static GameModeRunner gameModeRunner = GameModeRunner(&timers, buttons, &lcd);
+  // Show connection info briefly
+  lcd.ClearScreen();
+  lcd.WriteMessage("ob.local", 0, Alignment::Center);
+  lcd.WriteMessage("192.168.4.1", 1, Alignment::Center);
+  lcd.WriteMessage("\"Objective Bucket\"", 2, Alignment::Center);
+  lcd.Update();
+  delay(3000);
 
-    static KotH koth = KotH();
-    gameModeRunner.AddGameMode(&koth);
-
-    static FifthElement fifthElement = FifthElement();
-    gameModeRunner.AddGameMode(&fifthElement);
-
-    static LifeCounter lifecounter = LifeCounter();
-    gameModeRunner.AddGameMode(&lifecounter);
-
-    static GameMode g2 = GameMode(" --- ");
-    gameModeRunner.AddGameMode(&g2);
+  lcd.ClearScreen();
+  timers.Start(100, UpdateLcd, NULL, TimerType::Periodic);
 }
 
 void loop()
 {
-    timers.Run();
+  timers.Run();
+  if (webServer) webServer->Update(); // services mDNS
 }
