@@ -5,436 +5,317 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Objective Bucket</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;800&family=Barlow:wght@400;500&display=swap');
+  body { font-family: sans-serif; background: #111; color: #eee; margin: 0; padding: 16px; max-width: 400px; margin: 0 auto; }
+  h1   { color: #f5a623; margin: 16px 0 4px; }
+  h2   { color: #aaa; font-size: 14px; font-weight: normal; margin: 0 0 24px; }
 
-  :root {
-    --bg: #0d0f12;
-    --surface: #171a1f;
-    --border: #2a2d35;
-    --accent: #f5a623;
-    --green: #3ddc84;
-    --red: #ff4d4d;
-    --text: #e8eaf0;
-    --muted: #6b7280;
-    --radius: 10px;
-  }
+  .page { display: none; }
+  .page.active { display: block; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Barlow', sans-serif;
-    min-height: 100vh;
-    padding: 0 0 40px 0;
-  }
-
-  header {
-    background: var(--surface);
-    border-bottom: 2px solid var(--accent);
-    padding: 16px 20px 12px;
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-  header h1 {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 800;
-    font-size: 26px;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-  header .subtitle {
-    font-size: 12px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .status-bar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    transition: background 0.3s;
-  }
-  .status-dot.idle    { background: var(--muted); }
-  .status-dot.running { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .status-dot.paused  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-  .status-label { color: var(--text); font-weight: 500; }
-
-  main { padding: 20px 16px 0; max-width: 480px; margin: 0 auto; }
-
-  .section-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 600;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-
-  /* Game list */
-  .game-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
   .game-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .game-item:active { background: #1e2229; }
-  .game-item.selected { border-color: var(--accent); background: rgba(245,166,35,0.07); }
-  .game-bullet {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .game-item.selected .game-bullet { border-color: var(--accent); background: var(--accent); }
-  .game-name {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 600;
-    font-size: 20px;
-  }
-
-  /* Config view */
-  #config-view { display: none; }
-  .config-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-  .back-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-family: 'Barlow', sans-serif;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .config-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 800;
-    font-size: 22px;
-    text-transform: uppercase;
-  }
-  .config-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
-  .config-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-  }
-  .config-item label {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 12px;
-  }
-  .config-value {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 600;
-    font-size: 20px;
-    color: var(--accent);
-  }
-  input[type=range] {
-    -webkit-appearance: none;
-    width: 100%; height: 4px;
-    border-radius: 2px;
-    background: var(--border);
-    outline: none;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    box-shadow: 0 0 0 3px rgba(245,166,35,0.2);
-  }
-
-  /* In-game view */
-  #game-view { display: none; }
-  .game-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  .game-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 800;
-    font-size: 24px;
-    text-transform: uppercase;
-  }
-
-  /* Buttons */
-  .btn {
-    display: block; width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: var(--radius);
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 800;
-    font-size: 20px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
-    margin-bottom: 10px;
-  }
-  .btn:active { opacity: 0.85; transform: scale(0.98); }
-  .btn:disabled { opacity: 0.35; pointer-events: none; }
-  .btn-primary   { background: var(--accent); color: #111; }
-  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-  .btn-danger    { background: var(--red);    color: #fff; }
-  .btn-green     { background: var(--green);  color: #111; }
-
-  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-
-  .toast {
-    position: fixed;
-    bottom: 24px; left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: #1e2229;
-    border: 1px solid var(--border);
+    padding: 14px 16px;
+    border: 1px solid #333;
     border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 14px;
-    color: var(--text);
-    transition: transform 0.25s ease;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 100;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background: #1a1a1a;
   }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .game-item.selected { border-color: #f5a623; background: #1f1a0f; }
+  .game-name { font-size: 18px; font-weight: bold; }
+
+  .timer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .timer-btn {
+    font-size: 28px;
+    width: 56px; height: 56px;
+    background: #222;
+    border: 1px solid #444;
+    color: #eee;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .timer-btn:disabled { opacity: 0.3; }
+  .timer-val { font-size: 40px; font-weight: bold; color: #f5a623; min-width: 100px; text-align: center; }
+
+  .countdown { font-size: 64px; font-weight: bold; text-align: center; color: #f5a623; margin: 24px 0; }
+  .game-over { background: #8b0000; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 20px; margin-bottom: 16px; display: none; }
+
+  button.btn {
+    display: block; width: 100%;
+    padding: 16px; margin-bottom: 10px;
+    border: none; border-radius: 8px;
+    font-size: 16px; font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-start  { background: #f5a623; color: #111; }
+  .btn-action { background: #222; color: #eee; border: 1px solid #444; }
+  .btn-danger { background: #8b0000; color: #fff; }
+  .btn-back   { background: none; color: #aaa; border: 1px solid #333; margin-bottom: 20px; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+
+  hr { border: none; border-top: 1px solid #333; margin: 16px 0; }
 </style>
 </head>
 <body>
 
-<header>
+<!-- PAGE: SELECT -->
+<div class="page active" id="page-select">
   <h1>Objective Bucket</h1>
-  <span class="subtitle">Derby Darts</span>
-</header>
-
-<div class="status-bar">
-  <div class="status-dot idle" id="statusDot"></div>
-  <span id="statusLabel" class="status-label">Idle</span>
+  <h2>Select a game mode</h2>
+  <div id="game-list"></div>
+  <button class="btn btn-start" onclick="goToConfigure()">Configure &amp; Start &#8594;</button>
 </div>
 
-<main>
-  <!-- GAME SELECT -->
-  <div id="game-select-view">
-    <p class="section-label">Select Game Mode</p>
-    <div class="game-list" id="gameList"></div>
-    <button class="btn btn-primary" id="btnConfigure">Configure &amp; Start</button>
+<!-- PAGE: CONFIGURE -->
+<div class="page" id="page-configure">
+  <button class="btn-back" onclick="goToSelect()">&#8592; Back</button>
+  <h1 id="cfg-title"></h1>
+  <h2>Set match time</h2>
+  <div class="timer-row">
+    <button class="timer-btn" id="btn-minus" onclick="stepTime(-1)">&#8722;</button>
+    <span class="timer-val" id="timer-display">6:00</span>
+    <button class="timer-btn" id="btn-plus" onclick="stepTime(1)">+</button>
   </div>
+  <p style="text-align:center; color:#666; font-size:13px; margin-bottom:24px;">Set to None for no timer.</p>
+  <button class="btn btn-start" onclick="startGame()">Start Game</button>
+</div>
 
-  <!-- CONFIG -->
-  <div id="config-view">
-    <div class="config-header">
-      <button class="back-btn" id="btnBack">&#8592; Back</button>
-      <span class="config-title" id="configTitle"></span>
-    </div>
-    <div class="config-list" id="configList"></div>
-    <button class="btn btn-primary" id="btnStart">Start Game</button>
-  </div>
-
-  <!-- IN-GAME -->
-  <div id="game-view">
-    <div class="game-header">
-      <span class="game-title" id="gameViewTitle"></span>
-    </div>
-    <button class="btn btn-green"     id="btnResume" style="display:none">Resume</button>
-    <button class="btn btn-secondary" id="btnPause">Pause</button>
-    <button class="btn btn-secondary" id="btnReset">Reset</button>
-    <hr class="divider">
-    <button class="btn btn-danger"    id="btnExit">Exit Game</button>
-  </div>
-</main>
-
-<div class="toast" id="toast"></div>
+<!-- PAGE: RUNNING -->
+<div class="page" id="page-running">
+  <h1 id="run-title"></h1>
+  <div class="game-over" id="game-over-banner">GAME OVER</div>
+  <div class="countdown" id="countdown"></div>
+  <button class="btn btn-action" id="btn-pause-resume" onclick="togglePause()">Pause</button>
+  <button class="btn btn-action" onclick="resetGame()">Reset</button>
+  <hr>
+  <button class="btn btn-danger" onclick="exitGame()">Exit Game</button>
+</div>
 
 <script>
-  let state = { running: false, paused: false, mode: 0, games: [], configs: [] };
-  let pendingMode = 0;
-  let pendingConfigs = {};
+var selectedMode   = 0;
+var pendingTimeSec = 360;
+var gameNames      = [];
+var prevRunning    = false;
+var prevPaused     = false;
+var prevGameOver   = false;
+var audioCtx       = null;
 
-  const views = {
-    select: document.getElementById('game-select-view'),
-    config: document.getElementById('config-view'),
-    game:   document.getElementById('game-view'),
-  };
+// Timer stepper: 0 = none, then 120..600 in steps of 30
+var MIN_SEC = 0, MAX_SEC = 600, STEP = 30;
 
-  function showView(name) {
-    Object.values(views).forEach(v => v.style.display = 'none');
-    views[name].style.display = '';
+function fmt(s) {
+  s = Math.max(0, Math.floor(s));
+  var m = Math.floor(s / 60);
+  var sec = s % 60;
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+// ---- Buzzer sound (aggressive basketball buzzer) ----
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playBuzzer() {
+  try {
+    var ctx = getCtx();
+    var now = ctx.currentTime;
+
+    // Three blasts: 2s on, 1s off, 2s on, 1s off, 2s on
+    [0, 3, 6].forEach(function(t) {
+      var buzz = ctx.createOscillator();
+      var gain = ctx.createGain();
+      buzz.connect(gain);
+      gain.connect(ctx.destination);
+      buzz.type = 'square';
+      buzz.frequency.value = 160;
+      gain.gain.setValueAtTime(0.6, now + t);
+      gain.gain.setValueAtTime(0.001, now + t + 2.0);
+      buzz.start(now + t);
+      buzz.stop(now + t + 2.0);
+    });
+  } catch(e) {}
+}
+
+document.body.addEventListener('touchstart', function() { getCtx(); }, { once: true });
+
+// ---- Stepper ----
+function stepperLabel(s) {
+  if (s <= 0) return 'None';
+  return fmt(s);
+}
+
+function updateStepper() {
+  document.getElementById('timer-display').textContent = stepperLabel(pendingTimeSec);
+  document.getElementById('btn-minus').disabled = (pendingTimeSec <= MIN_SEC);
+  document.getElementById('btn-plus').disabled  = (pendingTimeSec >= MAX_SEC);
+}
+
+function stepTime(dir) {
+  if (dir < 0) {
+    // stepping down: 120 -> 0 (skip everything between)
+    pendingTimeSec = (pendingTimeSec <= 30) ? 0 : pendingTimeSec - STEP;
+  } else {
+    // stepping up: 0 -> 120
+    pendingTimeSec = (pendingTimeSec <= 0) ? 30 : Math.min(MAX_SEC, pendingTimeSec + STEP);
   }
+  updateStepper();
+}
 
-  function updateStatusBar() {
-    const dot   = document.getElementById('statusDot');
-    const label = document.getElementById('statusLabel');
-    dot.className = 'status-dot';
-    if (!state.running) {
-      dot.classList.add('idle');
-      label.textContent = 'Idle — select a game';
-    } else if (state.paused) {
-      dot.classList.add('paused');
-      label.textContent = 'Paused — ' + (state.games[state.mode] || '');
+// ---- Navigation ----
+function goToSelect() { showPage('page-select'); }
+
+function goToConfigure() {
+  document.getElementById('cfg-title').textContent = gameNames[selectedMode] || '';
+  updateStepper();
+  showPage('page-configure');
+  if (window.Notification && Notification.permission === 'default') Notification.requestPermission();
+}
+
+function startGame() {
+  post('/config', { key: 'matchTime', value: pendingTimeSec }, function() {
+    post('/start', {}, function() {
+      document.getElementById('game-over-banner').style.display = 'none';
+      document.getElementById('run-title').textContent = gameNames[selectedMode] || '';
+      document.getElementById('btn-pause-resume').textContent = 'Pause';
+      showPage('page-running');
+    });
+  });
+}
+
+// ---- In-game actions ----
+function togglePause() {
+  var btn = document.getElementById('btn-pause-resume');
+  if (btn.textContent === 'Pause') {
+    post('/pause', {}, function() { btn.textContent = 'Resume'; });
+  } else {
+    post('/resume', {}, function() {
+      btn.textContent = 'Pause';
+      document.getElementById('game-over-banner').style.display = 'none';
+    });
+  }
+}
+
+function resetGame() {
+  post('/reset', {}, function() {
+    document.getElementById('game-over-banner').style.display = 'none';
+    document.getElementById('btn-pause-resume').textContent = 'Pause';
+  });
+}
+
+function exitGame() {
+  post('/exit', {}, function() {
+    document.getElementById('game-over-banner').style.display = 'none';
+    showPage('page-select');
+  });
+}
+
+// ---- Game list ----
+function renderGameList() {
+  var list = document.getElementById('game-list');
+  list.innerHTML = '';
+  gameNames.forEach(function(name, i) {
+    var el = document.createElement('div');
+    el.className = 'game-item' + (i === selectedMode ? ' selected' : '');
+    el.innerHTML = '<span class="game-name">' + name + '</span>';
+    el.onclick = function() {
+      selectedMode = i;
+      post('/select', { index: i });
+      renderGameList();
+    };
+    list.appendChild(el);
+  });
+}
+
+// ---- XHR helpers ----
+function post(path, body, cb) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', path, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() { if (cb) cb(); };
+  xhr.onerror = function() {};
+  xhr.send(JSON.stringify(body || {}));
+}
+
+// ---- State poll ----
+function poll() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/state', true);
+  xhr.onload = function() {
+    if (xhr.status !== 200) return;
+    var s;
+    try { s = JSON.parse(xhr.responseText); } catch(e) { return; }
+
+    // Update game list
+    if (JSON.stringify(s.games) !== JSON.stringify(gameNames)) {
+      gameNames = s.games || [];
+      renderGameList();
+    }
+
+    // Update countdown — hide if no timer (remainingMs == -1)
+    var cd = document.getElementById('countdown');
+    if (s.remainingMs < 0) {
+      cd.style.display = 'none';
     } else {
-      dot.classList.add('running');
-      label.textContent = 'Running — ' + (state.games[state.mode] || '');
-    }
-  }
-
-  function renderGameList() {
-    const list = document.getElementById('gameList');
-    list.innerHTML = '';
-    state.games.forEach((name, i) => {
-      const el = document.createElement('div');
-      el.className = 'game-item' + (i === pendingMode ? ' selected' : '');
-      el.innerHTML = `<div class="game-bullet"></div><span class="game-name">${name}</span>`;
-      el.addEventListener('click', () => {
-        pendingMode = i;
-        post('/select', { index: i });
-        renderGameList();
-      });
-      list.appendChild(el);
-    });
-  }
-
-  function fmtSec(s) {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return m + ':' + String(sec).padStart(2, '0');
-  }
-
-  function renderConfigView() {
-    pendingConfigs = {};
-    document.getElementById('configTitle').textContent = state.games[state.mode] || '';
-    const list = document.getElementById('configList');
-    list.innerHTML = '';
-
-    if (!state.configs || state.configs.length === 0) {
-      list.innerHTML = '<p style="color:var(--muted);font-size:14px;">No settings for this mode.</p>';
-      return;
+      cd.style.display = '';
+      cd.textContent = fmt(s.remainingMs / 1000);
     }
 
-    state.configs.forEach(cfg => {
-      pendingConfigs[cfg.key] = cfg.value;
-      const displayVal = cfg.unit === 'sec' ? fmtSec(cfg.value) : cfg.value + ' ' + cfg.unit;
-      const item = document.createElement('div');
-      item.className = 'config-item';
-      item.innerHTML = `
-        <label>
-          <span>${cfg.label}</span>
-          <span class="config-value" id="val-${cfg.key}">${displayVal}</span>
-        </label>
-        <input type="range" id="range-${cfg.key}"
-          min="${cfg.min}" max="${cfg.max}" value="${cfg.value}"
-          step="${cfg.unit === 'sec' ? 30 : 1}">
-      `;
-      list.appendChild(item);
-      const range = item.querySelector('input');
-      const valEl = item.querySelector('.config-value');
-      range.addEventListener('input', () => {
-        const v = parseInt(range.value);
-        pendingConfigs[cfg.key] = v;
-        valEl.textContent = cfg.unit === 'sec' ? fmtSec(v) : v + ' ' + cfg.unit;
-      });
-    });
-  }
-
-  function renderGameView() {
-    document.getElementById('gameViewTitle').textContent = state.games[state.mode] || '';
-    document.getElementById('btnPause').style.display  = state.paused ? 'none' : '';
-    document.getElementById('btnResume').style.display = state.paused ? '' : 'none';
-  }
-
-  function render() {
-    updateStatusBar();
-    if (state.running) { renderGameView(); showView('game'); }
-    else               { renderGameList(); showView('select'); }
-  }
-
-  async function post(path, body) {
-    try {
-      const r = await fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body || {}),
-      });
-      if (!r.ok) showToast('Error: ' + r.status);
-    } catch(e) { showToast('Connection lost'); }
-  }
-
-  async function fetchState() {
-    try {
-      const r = await fetch('/state');
-      if (!r.ok) return;
-      const data = await r.json();
-      const wasRunning = state.running;
-      state = data;
-      if (!wasRunning && data.running)       { renderGameView(); showView('game'); updateStatusBar(); }
-      else if (wasRunning && !data.running)  { render(); }
-      else if (data.running)                 { renderGameView(); updateStatusBar(); }
-      else                                   { updateStatusBar(); }
-    } catch(e) {}
-  }
-
-  document.getElementById('btnConfigure').addEventListener('click', () => {
-    renderConfigView(); showView('config');
-  });
-  document.getElementById('btnBack').addEventListener('click', () => showView('select'));
-  document.getElementById('btnStart').addEventListener('click', async () => {
-    for (const [key, value] of Object.entries(pendingConfigs)) {
-      await post('/config', { key, value });
+    // Game over — driven by server flag, not inferred
+    if (s.gameOver && !prevGameOver) {
+      document.getElementById('game-over-banner').style.display = 'block';
+      document.getElementById('btn-pause-resume').textContent = 'Resume';
+      playBuzzer();
+      if (window.Notification && Notification.permission === 'granted') {
+        new Notification('Game Over!', { body: 'The match has ended.' });
+      }
     }
-    await post('/start');
-    showToast('Game starting!');
-  });
-  document.getElementById('btnPause').addEventListener('click', () => {
-    post('/pause'); state.paused = true; renderGameView(); updateStatusBar();
-  });
-  document.getElementById('btnResume').addEventListener('click', () => {
-    post('/resume'); state.paused = false; renderGameView(); updateStatusBar();
-  });
-  document.getElementById('btnReset').addEventListener('click', () => {
-    post('/reset'); showToast('Game reset');
-  });
-  document.getElementById('btnExit').addEventListener('click', async () => {
-    await post('/exit'); showToast('Exiting game...');
-  });
+    // Clear banner when game resets (gameOver flag drops)
+    if (!s.gameOver && prevGameOver) {
+      document.getElementById('game-over-banner').style.display = 'none';
+      document.getElementById('btn-pause-resume').textContent = 'Pause';
+    }
 
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-  }
+    // Game exited from hardware
+    if (prevRunning && !s.running) {
+      document.getElementById('game-over-banner').style.display = 'none';
+      showPage('page-select');
+    }
 
-  render();
-  setInterval(fetchState, 1000);
+    // Game started from hardware
+    if (!prevRunning && s.running) {
+      document.getElementById('run-title').textContent = gameNames[s.mode] || '';
+      document.getElementById('btn-pause-resume').textContent = s.paused ? 'Resume' : 'Pause';
+      showPage('page-running');
+    }
+
+    // Keep pause button in sync with hardware (only when not game-over)
+    if (s.running && !s.gameOver) {
+      document.getElementById('btn-pause-resume').textContent = s.paused ? 'Resume' : 'Pause';
+    }
+
+    prevRunning  = s.running;
+    prevPaused   = s.paused;
+    prevGameOver = s.gameOver;
+  };
+  xhr.onerror = function() {};
+  xhr.send();
+}
+
+poll();
+setInterval(poll, 1000);
 </script>
 </body>
 </html>
@@ -450,14 +331,14 @@ void OBWebServer::Begin()
   WiFi.softAPConfig(AP_IP_ADDR, AP_IP_ADDR, IPAddress(255, 255, 255, 0));
   WiFi.softAP(AP_SSID);
 
-  Serial.print("AP started. IP: ");
+  Serial.print("AP IP: ");
   Serial.println(WiFi.softAPIP());
 
   if (MDNS.begin(AP_HOSTNAME)) {
-    Serial.println("mDNS started: http://ob.local");
     MDNS.addService("http", "tcp", 80);
+    Serial.println("mDNS: http://ob.local");
   } else {
-    Serial.println("mDNS failed — use 192.168.4.1");
+    Serial.println("mDNS failed, use 192.168.4.1");
   }
 
   setupRoutes();
@@ -472,36 +353,35 @@ void OBWebServer::Update()
 
 String OBWebServer::buildStateJson()
 {
-  String json = "{";
-  json += "\"running\":" + String(runner->IsRunning() ? "true" : "false") + ",";
-  json += "\"paused\":"  + String(runner->IsPaused()  ? "true" : "false") + ",";
-  json += "\"mode\":"    + String(runner->CurrentMode()) + ",";
+  String json = "";
+  json.reserve(256);
 
-  json += "\"games\":[";
-  for (int i = 0; i < runner->GetNumGames(); i++) {
+  int  mode     = runner->CurrentMode();
+  bool running  = runner->IsRunning();
+  bool paused   = runner->IsPaused();
+  int  nGames   = runner->GetNumGames();
+  int  safeMode = (mode == GAMEMODE_IDLE || mode >= nGames) ? 0 : mode;
+
+  bool gameOver = false;
+  long remaining = -1;
+  if (running && safeMode < nGames) {
+    GameMode *g = runner->GetGame(safeMode);
+    gameOver  = g->IsGameOver();
+    remaining = g->GetRemainingMs();
+  }
+
+  json += "{\"running\":";   json += running  ? "true" : "false";
+  json += ",\"paused\":";    json += paused   ? "true" : "false";
+  json += ",\"gameOver\":";  json += gameOver ? "true" : "false";
+  json += ",\"mode\":";      json += String(safeMode);
+  json += ",\"games\":[";
+  for (int i = 0; i < nGames; i++) {
     if (i > 0) json += ",";
-    json += "\"" + runner->GetGame(i)->GetName() + "\"";
+    json += "\""; json += runner->GetGame(i)->GetName(); json += "\"";
   }
-  json += "],";
-
-  json += "\"configs\":[";
-  int mode = runner->CurrentMode();
-  if (mode != GAMEMODE_IDLE && mode < runner->GetNumGames()) {
-    GameMode *g = runner->GetGame(mode);
-    for (int i = 0; i < g->GetConfigCount(); i++) {
-      GameConfig c = g->GetConfig(i);
-      if (i > 0) json += ",";
-      json += "{";
-      json += "\"key\":\""   + c.key      + "\",";
-      json += "\"label\":\"" + c.label    + "\",";
-      json += "\"value\":"   + String(c.value)    + ",";
-      json += "\"min\":"     + String(c.minValue) + ",";
-      json += "\"max\":"     + String(c.maxValue) + ",";
-      json += "\"unit\":\""  + c.unit     + "\"";
-      json += "}";
-    }
-  }
-  json += "]}";
+  json += "],\"remainingMs\":";
+  json += String(remaining);
+  json += "}";
   return json;
 }
 
@@ -515,7 +395,7 @@ void OBWebServer::setupRoutes()
     req->send(200, "application/json", buildStateJson());
   });
 
-  server.on("/select", HTTP_POST, [this](AsyncWebServerRequest *req){}, NULL,
+  server.on("/select", HTTP_POST, [](AsyncWebServerRequest *req){}, NULL,
     [this](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
       String body = String((char*)data).substring(0, len);
       int idx = body.indexOf("\"index\"");
@@ -523,31 +403,31 @@ void OBWebServer::setupRoutes()
       req->send(200, "application/json", "{\"ok\":true}");
     });
 
-  server.on("/start", HTTP_POST, [this](AsyncWebServerRequest *req){}, NULL,
+  server.on("/start", HTTP_POST, [](AsyncWebServerRequest *req){}, NULL,
     [this](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
       runner->WebStartGame();
       req->send(200, "application/json", "{\"ok\":true}");
     });
 
-  server.on("/reset", HTTP_POST, [this](AsyncWebServerRequest *req){}, NULL,
+  server.on("/reset", HTTP_POST, [](AsyncWebServerRequest *req){}, NULL,
     [this](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
       runner->WebResetGame();
       req->send(200, "application/json", "{\"ok\":true}");
     });
 
-  server.on("/pause", HTTP_POST, [this](AsyncWebServerRequest *req){}, NULL,
+  server.on("/pause", HTTP_POST, [](AsyncWebServerRequest *req){}, NULL,
     [this](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
       runner->WebPauseGame();
       req->send(200, "application/json", "{\"ok\":true}");
     });
 
-  server.on("/resume", HTTP_POST, [this](AsyncWebServerRequest *req){}, NULL,
+  server.on("/resume", HTTP_POST, [](AsyncWebServerRequest *req){}, NULL,
     [this](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
       runner->WebResumeGame();
       req->send(200, "application/json", "{\"ok\":true}");
     });
 
-  server.on("/exit", HTTP_POST, [this](AsyncWebServerRequest *req){}, NULL,
+  server.on("/exit", HTTP_POST, [](AsyncWebServerRequest *req){}, NULL,
     [this](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
       if (runner->IsRunning()) {
         ButtonData fakeHold = { .event = ButtonState::Hold, .holdTime = 2000 };
@@ -556,20 +436,20 @@ void OBWebServer::setupRoutes()
       req->send(200, "application/json", "{\"ok\":true}");
     });
 
-  server.on("/config", HTTP_POST, [this](AsyncWebServerRequest *req){}, NULL,
+  server.on("/config", HTTP_POST, [](AsyncWebServerRequest *req){}, NULL,
     [this](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
       String body = String((char*)data).substring(0, len);
       int keyIdx = body.indexOf("\"key\"");
       int valIdx = body.indexOf("\"value\"");
       if (keyIdx >= 0 && valIdx >= 0) {
-        int qs  = body.indexOf('"', keyIdx + 5) + 1;
-        int qe  = body.indexOf('"', qs);
+        int qs     = body.indexOf('"', keyIdx + 5) + 1;
+        int qe     = body.indexOf('"', qs);
         String key = body.substring(qs, qe);
         long value = body.substring(body.indexOf(':', valIdx) + 1).toInt();
-        int mode = runner->CurrentMode();
-        if (mode != GAMEMODE_IDLE && mode < runner->GetNumGames()) {
-          runner->GetGame(mode)->SetConfig(key, value);
-        }
+        int mode   = runner->CurrentMode();
+        int n      = runner->GetNumGames();
+        int safe   = (mode == GAMEMODE_IDLE || mode >= n) ? 0 : mode;
+        runner->GetGame(safe)->SetConfig(key, value);
       }
       req->send(200, "application/json", "{\"ok\":true}");
     });

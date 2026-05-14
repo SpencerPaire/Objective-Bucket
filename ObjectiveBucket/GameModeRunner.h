@@ -61,8 +61,10 @@ class GameMode {
     virtual void UpdateScreen();
 
     // State query for web UI
-    virtual bool IsRunning() { return false; }
-    virtual bool IsPaused() { return false; }
+    virtual bool IsRunning()   { return false; }
+    virtual bool IsPaused()    { return false; }
+    virtual bool IsGameOver()  { return false; }
+    virtual long GetRemainingMs() { return -1; } // -1 = no timer
 };
 
 #define MaxGames 20

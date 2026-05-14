@@ -20,8 +20,8 @@ enum FifthElement_Timers {
 class FifthElement : public GameMode {
 
   // ---- static callbacks ----
-  static void sGameOver(void *ctx) { ((GameMode*)ctx)->Pause(); }
   static void sUpdate(void *ctx)   { ((GameMode*)ctx)->UpdateScreen(); }
+  static void sGameOver(void *ctx)   { ((FifthElement*)ctx)->gameOver = true; ((GameMode*)ctx)->Pause(); }
   static void sBtn0(void *ctx, ButtonData d) { ((GameMode*)ctx)->ButtonEvent(ButtonEnum::Button0, d); }
   static void sBtn1(void *ctx, ButtonData d) { ((GameMode*)ctx)->ButtonEvent(ButtonEnum::Button1, d); }
   static void sBtn2(void *ctx, ButtonData d) { ((GameMode*)ctx)->ButtonEvent(ButtonEnum::Button2, d); }
@@ -42,6 +42,10 @@ class FifthElement : public GameMode {
   }
 
 public:
+
+  bool gameOver = false;
+  bool IsGameOver() override { return gameOver; }
+
   FifthElement() {
     this->name = "Fifth Element";
     holdMs     = FIFTH_DEFAULT_HOLD_MS;
@@ -58,6 +62,7 @@ public:
   }
 
   void Init(Timers *timers, Button *buttons[ButtonEnum_Max], Lcd *lcd) override {
+    gameOver = false;
     Serial.println("FifthElement Selected");
     this->timers  = timers;
     this->buttons = buttons;
@@ -125,9 +130,13 @@ public:
   }
 
   void Reset() override {
+    gameOver = false;
     timers->Stop(gameTimers[FifthElement_GameTimer]);
     gameTimers[FifthElement_GameTimer] = timers->Start(holdMs, sGameOver, this, TimerType::Periodic);
     timers->Pause(gameTimers[FifthElement_GameTimer]);
     timers->Resume(gameTimers[FifthElement_UpdateTimer]);
+  }
+  long GetRemainingMs() override {
+    return timers->RemainingTime(gameTimers[FifthElement_GameTimer]);
   }
 };

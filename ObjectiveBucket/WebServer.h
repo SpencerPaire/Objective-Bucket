@@ -8,7 +8,7 @@
 #include "GameModeRunner.h"
 
 #define AP_SSID     "Objective Bucket"
-#define AP_HOSTNAME "ob"               // resolves as ob.local
+#define AP_HOSTNAME "ob"
 #define AP_IP_ADDR  IPAddress(192, 168, 4, 1)
 
 class OBWebServer {
@@ -21,7 +21,7 @@ private:
 public:
   OBWebServer(GameModeRunner *runner);
   void Begin();
-  void Update(); // call from loop() to service mDNS
+  void Update();
 };
 
 #endif

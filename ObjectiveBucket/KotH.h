@@ -30,7 +30,7 @@ class KotH : public GameMode {
   // ---- static callbacks ----
   static void sClearFlash(void *ctx) { ((KotH*)ctx)->flash = false; }
   static void sUpdate(void *ctx)     { ((GameMode*)ctx)->UpdateScreen(); }
-  static void sGameOver(void *ctx)   { ((GameMode*)ctx)->Pause(); }
+  static void sGameOver(void *ctx)   { ((KotH*)ctx)->gameOver = true; ((GameMode*)ctx)->Pause(); }
   static void sBtn0(void *ctx, ButtonData d) { ((GameMode*)ctx)->ButtonEvent(ButtonEnum::Button0, d); }
   static void sBtn1(void *ctx, ButtonData d) { ((GameMode*)ctx)->ButtonEvent(ButtonEnum::Button1, d); }
   static void sBtn2(void *ctx, ButtonData d) { ((GameMode*)ctx)->ButtonEvent(ButtonEnum::Button2, d); }
@@ -53,6 +53,8 @@ class KotH : public GameMode {
 
 public:
   bool flash = false;
+  bool gameOver = false;
+  bool IsGameOver() override { return gameOver; }
 
   KotH() {
     this->name   = "King of the Hill";
@@ -70,6 +72,7 @@ public:
   }
 
   void Init(Timers *timers, Button *buttons[ButtonEnum_Max], Lcd *lcd) override {
+    gameOver = false;
     Serial.println("KotH Selected");
     this->timers  = timers;
     this->buttons = buttons;
@@ -126,6 +129,7 @@ public:
   }
 
   void Reset() override {
+    gameOver = false;
     Ticks_t gameTicks = (Ticks_t)matchSeconds * 1000;
     for (int i = 0; i < KotH_MaxGameTimers; i++) {
       timers->Stop(gameTimers[i]);
@@ -133,5 +137,9 @@ public:
       timers->Pause(gameTimers[i]);
     }
     timers->Resume(gameTimers[KotH_UpdateTimer]);
+  }
+
+  long GetRemainingMs() override {
+    return timers->RemainingTime(gameTimers[KotH_GameTimer]);
   }
 };
